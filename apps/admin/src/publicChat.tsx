@@ -16,6 +16,8 @@ type Info = {
   project_id: string;
   verified: boolean;
   lead_capture: boolean;
+  support_enabled: boolean;
+  bookings_enabled: boolean;
   preview?: boolean;
 };
 const assistant = new URLSearchParams(location.search).get("assistant") || "";
@@ -268,7 +270,7 @@ function PublicChat() {
             >
               Delete this conversation
             </button>
-            {!info.preview && (
+            {!info.preview && info.support_enabled && (
               <button
                 disabled={busy || !conversation}
                 onClick={async () => {

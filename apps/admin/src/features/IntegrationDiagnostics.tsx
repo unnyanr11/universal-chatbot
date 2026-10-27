@@ -46,10 +46,11 @@ export function Enquiries({ assistant }: { assistant: string }) {
   const data = useResource<{
     items: { id: string; name: string; email: string; message: string }[];
   }>(`/v1/assistants/${assistant}/leads`, tick);
+  const job = useTask();
   return (
     <section className="panel">
       <h2>Visitor enquiries</h2>
-      <ErrorNotice error={data.error} />
+      <ErrorNotice error={job.error || data.error} />
       <button onClick={() => setTick((value) => value + 1)}>
         Refresh enquiries
       </button>
@@ -58,6 +59,20 @@ export function Enquiries({ assistant }: { assistant: string }) {
           <strong>{item.name}</strong>
           <p>{item.email}</p>
           <p>{item.message}</p>
+          <button
+            disabled={job.busy}
+            onClick={() =>
+              job.task(async () => {
+                await client.request(
+                  `/v1/assistants/${assistant}/leads/${item.id}`,
+                  { method: "DELETE" },
+                );
+                setTick((value) => value + 1);
+              })
+            }
+          >
+            Delete enquiry
+          </button>
         </article>
       ))}
       {data.data && !data.data.items.length && <p>No enquiries received.</p>}

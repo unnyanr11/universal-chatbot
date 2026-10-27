@@ -26,7 +26,7 @@ In-app reminder records are real local notifications. No email/SMS delivery, dep
 
 ## Updated release operations
 
-Always run `python -m platform_api.migrate` before starting an updated checkout; the current additive schema revision is 8. Stop services and take an authorised backup before upgrading an existing deployment. The migration refuses a newer unsupported schema version. These revisions add tables; future destructive/type changes require explicit reviewed migrations.
+Always run `python -m platform_api.migrate` before starting an updated checkout; the current additive schema revision is 9. Stop services and take an authorised backup before upgrading an existing deployment. The migration refuses a newer unsupported schema version. These revisions add tables; future destructive/type changes require explicit reviewed migrations.
 
 The worker handles ingestion leases, reminder delivery and expired session/invitation/preference cleanup. If the database is temporarily unavailable, Compose restarts the worker; a native operator may need to restart its process. Workflow runs checkpoint in the database. The Workflows UI can recover an interrupted run after its 90-second lease expires, without replaying a completed booking.
 

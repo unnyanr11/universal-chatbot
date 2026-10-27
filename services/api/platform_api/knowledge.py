@@ -359,7 +359,30 @@ async def chat(
             "generation_streaming": False,
         }
     from .chat_actions import booking_query, booking_status, create_card, intent
+    from .database import AssistantIntegration, WidgetSession
 
+    widget = db.get(WidgetSession, session_digest)
+    integration = db.get(AssistantIntegration, scope[0].id) if widget else None
+    if (
+        widget
+        and not widget.preview
+        and integration
+        and not integration.bookings_enabled
+        and (booking_query(body.text) or intent(body.text))
+    ):
+        answer = (
+            "Appointments are not enabled for this assistant. Please contact the business directly."
+        )
+        db.add(Message(conversation_id=conversation_id, role="user", text=body.text))
+        db.add(Message(conversation_id=conversation_id, role="assistant", text=answer))
+        db.commit()
+        return {
+            "conversation_id": conversation_id,
+            "text": answer,
+            "citations": [],
+            "mode": "booking_unavailable",
+            "generation_streaming": False,
+        }
     if booking_query(body.text) and not intent(body.text):
         from .database import Project
 
@@ -389,8 +412,6 @@ async def chat(
         or re.search(r"\b(it|that|those|they|their)\b", body.text.lower())
     ):
         retrieval_query = previous_user[:500] + " " + body.text
-    from .database import WidgetSession
-
     widget_session = db.get(WidgetSession, session_digest)
     preview_mode = bool(widget_session and widget_session.preview)
     evidence = retrieve(db, scope[0].id, retrieval_query, preview=preview_mode)

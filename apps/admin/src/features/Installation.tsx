@@ -5,6 +5,8 @@ type Integration = {
   revision: number;
   enabled: boolean;
   lead_capture: boolean;
+  support_enabled: boolean;
+  bookings_enabled: boolean;
   daily_limit: number;
   published: boolean;
   has_identity_secret: boolean;
@@ -53,6 +55,26 @@ export function Installation({ assistant }: { assistant: string }) {
             Offer enquiry capture with visitor consent
           </label>
           <label>
+            <input
+              type="checkbox"
+              checked={draft.support_enabled}
+              onChange={(event) =>
+                setDraft({ ...draft, support_enabled: event.target.checked })
+              }
+            />{" "}
+            Offer human support handoff
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={draft.bookings_enabled}
+              onChange={(event) =>
+                setDraft({ ...draft, bookings_enabled: event.target.checked })
+              }
+            />{" "}
+            Offer appointments with verified customer identity
+          </label>
+          <label>
             Daily public-message limit (UTC)
             <input
               type="number"
@@ -74,6 +96,8 @@ export function Installation({ assistant }: { assistant: string }) {
                     revision: draft.revision,
                     enabled: draft.enabled,
                     lead_capture: draft.lead_capture,
+                    support_enabled: draft.support_enabled,
+                    bookings_enabled: draft.bookings_enabled,
                     daily_limit: draft.daily_limit,
                   }),
                 });

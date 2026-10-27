@@ -56,6 +56,7 @@ def identity(
             )
             allowed = allowed or (
                 widget.verified
+                and config.bookings_enabled
                 and bool(
                     re.fullmatch(
                         r"/(?:operations(?:/[^/]+(?:/confirm)?)?|bookings|chat-actions/[^/]+(?:/propose)?)",
@@ -63,7 +64,11 @@ def identity(
                     )
                 )
             )
-        if not widget.preview and request.url.path.startswith(project_prefix + "/"):
+        if (
+            not widget.preview
+            and config.support_enabled
+            and request.url.path.startswith(project_prefix + "/")
+        ):
             allowed = allowed or bool(re.fullmatch(r"/tickets(?:/[^/]+)?", project_suffix))
         if not allowed:
             raise HTTPException(403, "WIDGET_SCOPE_ONLY")

@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from .database import Base, connect
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 def migrate(url):
@@ -20,6 +20,17 @@ def migrate(url):
             raise RuntimeError("Unsupported schema version")
         if (version or 0) < SCHEMA_VERSION:
             Base.metadata.create_all(conn)
+            if version == 8:
+                conn.execute(
+                    text(
+                        "ALTER TABLE assistant_integrations ADD COLUMN support_enabled BOOLEAN NOT NULL DEFAULT FALSE"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "ALTER TABLE assistant_integrations ADD COLUMN bookings_enabled BOOLEAN NOT NULL DEFAULT FALSE"
+                    )
+                )
             for revision in range((version or 0) + 1, SCHEMA_VERSION + 1):
                 conn.execute(
                     text("INSERT INTO schema_version VALUES (:version)"), {"version": revision}

@@ -85,7 +85,7 @@ test("published guest widget, enquiries and isolated draft preview work end to e
   await expect(
     frame.getByRole("heading", { name: "Integration acceptance" }),
   ).toBeVisible();
-  await expect(frame.getByLabel("Email", { exact: true })).toHaveCount(0);
+  await expect(frame.getByLabel("Password", { exact: true })).toHaveCount(0);
   await frame.getByLabel("Your question").fill("warranty");
   await frame.getByRole("button", { name: "Send message" }).click();
   await expect(frame.getByRole("log")).toContainText("twelve months");

@@ -369,6 +369,8 @@ class AssistantIntegration(Base):
     assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), primary_key=True)
     enabled: Mapped[bool] = mapped_column(default=False)
     lead_capture: Mapped[bool] = mapped_column(default=False)
+    support_enabled: Mapped[bool] = mapped_column(default=False)
+    bookings_enabled: Mapped[bool] = mapped_column(default=False)
     daily_limit: Mapped[int] = mapped_column(default=100)
     revision: Mapped[int] = mapped_column(default=1)
     identity_secret: Mapped[str] = mapped_column(default="")

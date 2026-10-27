@@ -77,6 +77,8 @@ class IntegrationInput(Input):
     revision: int = Field(ge=0)
     enabled: bool
     lead_capture: bool = False
+    support_enabled: bool = False
+    bookings_enabled: bool = False
     daily_limit: int = Field(default=100, ge=1, le=10000)
 
 
@@ -101,6 +103,8 @@ def integration_record(db, assistant_id):
         "revision": row.revision if row else 0,
         "enabled": bool(row and row.enabled),
         "lead_capture": bool(row and row.lead_capture),
+        "support_enabled": bool(row and row.support_enabled),
+        "bookings_enabled": bool(row and row.bookings_enabled),
         "daily_limit": row.daily_limit if row else 100,
         "has_identity_secret": bool(row and row.identity_secret),
         "published": published(db, assistant_id) is not None,
@@ -238,6 +242,7 @@ def verify_identity(db, row, token):
             claims["assistant_id"] != row.assistant_id
             or not isinstance(claims["sub"], str)
             or not 1 <= len(claims["sub"]) <= 200
+            or type(claims["exp"]) is not int
             or not time.time() < claims["exp"] <= time.time() + 300
             or not isinstance(claims["nonce"], str)
             or not 16 <= len(claims["nonce"]) <= 100
@@ -317,6 +322,8 @@ def guest(assistant_id: str, body: GuestInput, db=Depends(database)):
         "project_id": assistant.project_id,
         "configuration": config,
         "lead_capture": row.lead_capture,
+        "support_enabled": row.support_enabled,
+        "bookings_enabled": row.bookings_enabled,
         "verified": bool(subject),
         "expires_at": session.expires_at,
     }
@@ -335,6 +342,8 @@ def widget_info(scope=Depends(assistant_scope), session=Depends(identity), db=De
         "project_id": scope[0].project_id,
         "verified": bool(widget and widget.verified),
         "lead_capture": bool(not preview_mode and config and config.lead_capture),
+        "support_enabled": bool(not preview_mode and config and config.support_enabled),
+        "bookings_enabled": bool(not preview_mode and config and config.bookings_enabled),
     }
 
 
@@ -466,6 +475,7 @@ def installation(body: CheckInput, scope=Depends(assistant_scope), db=Depends(da
         .geturl()
         == origin + "/widget-loader.js"
         and script.get("data-assistant") == scope[0].id
+        and script.get("data-public") == "1"
         for script in page["scripts"]
     )
     config = published(db, scope[0].id) or {}

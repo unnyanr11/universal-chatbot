@@ -15,7 +15,7 @@ for attempt in $(seq 1 90); do
   sleep 2
 done
 wp() {
-  docker run --rm --network assistant-wp-test --volumes-from assistant-wp-web --user 33:33 -e WORDPRESS_DB_HOST=assistant-wp-db -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=synthetic-wp-password -e WORDPRESS_DB_NAME=wordpress -v "$PWD/tests/wordpress_validate.php:/tmp/wordpress_validate.php:ro" wordpress:cli "$@"
+  docker run --rm --network assistant-wp-test --volumes-from assistant-wp-web --user 33:33 -e WORDPRESS_DB_HOST=assistant-wp-db -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=synthetic-wp-password -e WORDPRESS_DB_NAME=wordpress -v "$PWD/tests/wordpress_validate.php:/tmp/wordpress_validate.php:ro" wordpress:cli wp "$@"
 }
 wp core install --url=http://127.0.0.1:8090 --title='Synthetic plugin acceptance' --admin_user=synthetic-admin --admin_password=synthetic-admin-password --admin_email=admin@example.test --skip-email
 wp plugin activate universal-chatbot

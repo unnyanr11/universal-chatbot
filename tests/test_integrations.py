@@ -43,6 +43,8 @@ def enable(client, headers, assistant, **changes):
         "revision": current["revision"],
         "enabled": True,
         "lead_capture": True,
+        "support_enabled": True,
+        "bookings_enabled": True,
         "daily_limit": 100,
     }
     body.update(changes)
@@ -188,7 +190,13 @@ def test_website_review_templates_branding_and_installation_checker(setup, monke
         "text": "Approved warranty terms.",
         "color": "#123456",
         "font_family": "georgia",
-        "scripts": [{"src": "https://chat.example/widget-loader.js", "data-assistant": assistant}],
+        "scripts": [
+            {
+                "src": "https://chat.example/widget-loader.js",
+                "data-assistant": assistant,
+                "data-public": "1",
+            }
+        ],
     }
     monkeypatch.setattr("platform_api.integrations.read_page", lambda url: page)
     review = client.post(root + "/website-review", headers=owner, json={"url": page["url"]})
@@ -341,3 +349,51 @@ def test_webhook_restart_exhaustion_and_plugin_zip(setup):
         ).status_code
         == 422
     )
+
+
+def test_faq_widget_can_disable_optional_business_writes(setup):
+    client, app = setup
+    owner = auth(client)
+    assistant = bot_id(client, owner)
+    root = f"/v1/assistants/{assistant}"
+    publish(client, owner, assistant)
+    enable(
+        client, owner, assistant, support_enabled=False, bookings_enabled=False, lead_capture=False
+    )
+    visitor = guest(client, assistant)
+    info = client.get(root + "/widget-info", headers=visitor).json()
+    assert not info["support_enabled"] and not info["bookings_enabled"] and not info["lead_capture"]
+    answer = client.post(
+        root + "/chat", headers=visitor, json={"text": "Book an appointment"}
+    ).json()
+    assert answer["mode"] == "booking_unavailable" and "action" not in answer
+    assert client.post("/v1/projects/cedar/tickets", headers=visitor, json={}).status_code == 403
+
+
+def test_revision_eight_migrates_optional_features_disabled(tmp_path):
+    from platform_api.database import connect
+    from platform_api.migrate import migrate
+    from sqlalchemy import text
+
+    url = f"sqlite:///{tmp_path / 'upgrade.db'}"
+    engine, _ = connect(url)
+    with engine.begin() as db:
+        db.execute(text("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)"))
+        db.execute(text("INSERT INTO schema_version VALUES (8)"))
+        db.execute(
+            text(
+                "CREATE TABLE assistant_integrations (assistant_id TEXT PRIMARY KEY, enabled BOOLEAN NOT NULL, lead_capture BOOLEAN NOT NULL, daily_limit INTEGER NOT NULL, revision INTEGER NOT NULL, identity_secret TEXT NOT NULL)"
+            )
+        )
+        db.execute(
+            text("INSERT INTO assistant_integrations VALUES ('existing', TRUE, FALSE, 100, 1, '')")
+        )
+    migrate(url)
+    migrate(url)
+    with engine.connect() as db:
+        row = db.execute(
+            text("SELECT enabled, support_enabled, bookings_enabled FROM assistant_integrations")
+        ).one()
+        assert row[0] and not row[1] and not row[2]
+        assert db.execute(text("SELECT MAX(version) FROM schema_version")).scalar() == 9
+    engine.dispose()
