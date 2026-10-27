@@ -21,3 +21,5 @@ The source component is type-checked separately by `tsc -p packages/react-sdk/ts
 Flutter and voice remain optional, unimplemented adapters. Nothing silently falls back to screen scraping or an unconfigured external connector.
 
 Configured generation uses `mode: "model"`; `extractive` remains a generation-free option. The React component supports an optional `mode="model"` prop. Configure provider credentials on the server or in assistant Settings; applications only receive ordinary short-lived session tokens. See PROVIDERS.md.
+
+Public widgets and signed customer sessions, WordPress installation, backend assertions, consented enquiries, safe updates and receiver signature helpers are documented in INTEGRATION.md. The public token grants no Studio/admin access. Use data-public="1" to opt into the public loader; existing authenticated embeds retain their behavior.

@@ -1085,3 +1085,33 @@ summary {
 .inline-booking .primary {
   margin-right: 8px;
 }
+
+.public-chat {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.public-chat header {
+  display: block;
+}
+.public-chat form {
+  margin: 16px 0;
+}
+.public-chat input,
+.public-chat textarea {
+  width: 100%;
+}
+.public-chat input[type="checkbox"] {
+  width: auto;
+}
+.public-chat .public-messages {
+  max-height: 55dvh;
+  overflow-y: auto;
+}
+.public-chat article {
+  margin: 12px 0;
+  padding: 16px;
+}
+.public-chat details {
+  padding: 10px 0;
+}

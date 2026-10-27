@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
-from .context import assistant_scope, database, identity, require_writer
+from .context import assistant_scope, database, identity, require_writer, widget_active
 from .database import (
     AssistantSettings,
     AssistantVersion,
@@ -43,7 +43,7 @@ def tokens(text):
     return [t for t in re.findall(r"\w+", text.lower()) if len(t) > 1 and t not in STOP]
 
 
-def retrieve(db, assistant_id, query):
+def retrieve(db, assistant_id, query, *, preview=False):
     terms = set(tokens(query)[:64])
     rows = db.execute(
         select(Chunk, Document)
@@ -52,7 +52,7 @@ def retrieve(db, assistant_id, query):
         .limit(5000)
     ).all()
     settings = db.get(AssistantSettings, assistant_id)
-    if settings and settings.published_version:
+    if settings and settings.published_version and not preview:
         snapshot = db.scalar(
             select(AssistantVersion).where(
                 AssistantVersion.assistant_id == assistant_id,
@@ -389,7 +389,11 @@ async def chat(
         or re.search(r"\b(it|that|those|they|their)\b", body.text.lower())
     ):
         retrieval_query = previous_user[:500] + " " + body.text
-    evidence = retrieve(db, scope[0].id, retrieval_query)
+    from .database import WidgetSession
+
+    widget_session = db.get(WidgetSession, session_digest)
+    preview_mode = bool(widget_session and widget_session.preview)
+    evidence = retrieve(db, scope[0].id, retrieval_query, preview=preview_mode)
     if body.retrieval != "lexical":
         from .semantic import semantic_retrieve
 
@@ -404,7 +408,7 @@ async def chat(
     if evidence and body.mode in {"local", "model"}:
         settings = db.get(AssistantSettings, scope[0].id)
         config = json.loads(settings.configuration) if settings else {}
-        if settings and settings.published_version:
+        if settings and settings.published_version and not preview_mode:
             published = db.scalar(
                 select(AssistantVersion).where(
                     AssistantVersion.assistant_id == scope[0].id,
@@ -490,6 +494,7 @@ async def chat(
     current_session = db.get(Session, session_digest)
     if (
         not current_session
+        or not widget_active(db, session_digest, scope[0].id)
         or current_session.expires_at <= time.time()
         or not db.get(Membership, (authenticated_user_id, organization_id))
     ):

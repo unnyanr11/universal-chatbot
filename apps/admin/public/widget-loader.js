@@ -4,9 +4,18 @@
   if (!(script instanceof HTMLScriptElement) || !script.dataset.assistant)
     return;
   const origin = new URL(script.src).origin;
-  const url = new URL("/", origin);
+  const url = new URL(
+    script.dataset.public === "1" ? "/chat.html" : "/",
+    origin,
+  );
   url.searchParams.set("widget", "1");
   url.searchParams.set("assistant", script.dataset.assistant);
+  if (script.dataset.identity) {
+    url.hash = new URLSearchParams({
+      identity: script.dataset.identity,
+    }).toString();
+    delete script.dataset.identity;
+  }
   const host = document.createElement("div");
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");

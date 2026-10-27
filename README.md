@@ -1,6 +1,6 @@
 # Universal Chatbot · Assistant Studio
 
-A self-hostable, local-first assistant platform with a React admin application, document-grounded chat, an authenticated website widget, transactional appointments, human support and durable local workflows. No paid AI API is required. This is a local platform release; optional provider and enterprise features have explicit boundaries in [STATUS.md](docs/STATUS.md).
+A self-hostable, local-first assistant platform with a React admin application, document-grounded chat, published guest and authenticated website widgets, transactional appointments, human support and durable local workflows. No paid AI API is required. This is a local platform release; optional provider and enterprise features have explicit boundaries in [STATUS.md](docs/STATUS.md).
 
 ## Working capabilities
 
@@ -128,7 +128,7 @@ The adapter limits active completions to one per API process, with 4,096 context
 5. **Support:** request human help from Chat. In another session, an owner/agent claims the ticket, adds a private note and sends a human reply. Customer “Refresh replies” never exposes the private note. Return the ticket to the assistant to resume automation.
 6. **Workflows:** save the provided booking template, run a labelled dry run, then a live version. Live runs stop at an exact approval preview. Saved runs remain pinned to their definition and resume after interruption.
 7. **Privacy:** inspect/forget explicit preferences, view delivered in-app reminders, export owned data or erase workspace activity. Accounts/shared knowledge/backups remain; the UI states those limits.
-8. **Integrate:** copy the iframe loader or use `/demo-embed.html`. External host names must be allowed in Settings; frame policies supplement authentication. The widget still requires login.
+8. **Integrate:** apply a starter template, review/import selected website pages, create a private draft preview, publish, enable public chat and copy the public loader. WordPress ZIP, shareable chat, signed identity, installation checks, diagnostics and approved signed webhooks are available. See [INTEGRATION.md](docs/INTEGRATION.md).
 
 ## Verification
 
@@ -154,6 +154,7 @@ Browser tests start an isolated synthetic API/worker; stop any server occupying 
 - [Security, privacy and retention](docs/SECURITY.md)
 - [Operations and backup/restore](docs/OPERATIONS.md)
 - [AI providers and API keys](docs/PROVIDERS.md)
+- [Guided onboarding, WordPress, identity, webhooks and safe updates](docs/INTEGRATION.md)
 - [Client integrations](docs/CLIENTS.md)
 - [Feature status](docs/STATUS.md)
 

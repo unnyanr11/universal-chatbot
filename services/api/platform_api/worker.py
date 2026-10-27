@@ -14,11 +14,14 @@ from .database import (
     Chunk,
     Document,
     Embedding,
+    IdentityNonce,
+    IntegrationCounter,
     Invitation,
     Job,
     Reminder,
     Session,
     UserMemory,
+    WebsiteReview,
     connect,
 )
 from .inference import ProviderUnavailable, embed_texts
@@ -28,7 +31,14 @@ def run_once(sessions):
     now = int(time.time())
     token = secrets.token_hex(16)
     with sessions.begin() as db:
-        for model in (UserMemory, Invitation, Session):
+        for model in (
+            UserMemory,
+            Invitation,
+            Session,
+            WebsiteReview,
+            IdentityNonce,
+            IntegrationCounter,
+        ):
             db.execute(delete(model).where(model.expires_at <= now))
         exhausted = list(
             db.scalars(
@@ -145,7 +155,11 @@ def main():
     engine, sessions = connect(os.getenv("DATABASE_URL", "sqlite:///./assistant.db"))
     try:
         while True:
-            if not run_once(sessions):
+            from .webhooks import deliver_once
+
+            ingested = run_once(sessions)
+            delivered = deliver_once(sessions)
+            if not ingested and not delivered:
                 time.sleep(1)
     except KeyboardInterrupt:
         pass

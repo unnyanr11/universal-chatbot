@@ -64,9 +64,11 @@ def create_app(database_url=None, provider=None):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
-        if request.url.path in {"/", "/demo-embed.html"}:
+        if request.url.path in {"/", "/demo-embed.html", "/chat.html"}:
             ancestors = ["'self'"]
-            if request.query_params.get("widget") and request.query_params.get("assistant"):
+            if (
+                request.query_params.get("widget") or request.url.path == "/chat.html"
+            ) and request.query_params.get("assistant"):
                 import json
 
                 from .database import AssistantSettings
@@ -74,7 +76,14 @@ def create_app(database_url=None, provider=None):
                 with sessions() as policy_db:
                     settings = policy_db.get(AssistantSettings, request.query_params["assistant"])
                     if settings:
-                        for domain in json.loads(settings.configuration).get("allowed_domains", []):
+                        from .integrations import published
+
+                        configured = (
+                            published(policy_db, request.query_params["assistant"])
+                            if request.url.path == "/chat.html"
+                            else json.loads(settings.configuration)
+                        )
+                        for domain in (configured or {}).get("allowed_domains", []):
                             scheme = (
                                 "http"
                                 if domain.split(":")[0] in {"localhost", "127.0.0.1"}
@@ -226,8 +235,12 @@ def create_app(database_url=None, provider=None):
     app.include_router(registry_router)
     app.include_router(calendar_router)
     app.include_router(team_router)
+    from .integrations import router as integration_router
     from .providers import router as provider_router
+    from .webhooks import router as webhook_router
 
+    app.include_router(integration_router)
+    app.include_router(webhook_router)
     app.include_router(provider_router)
     app.include_router(management_router)
     app.include_router(support_router)

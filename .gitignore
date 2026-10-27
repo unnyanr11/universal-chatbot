@@ -17,3 +17,5 @@ apps/admin/test-results/
 apps/admin/playwright-report/
 
 .env-*
+
+services/api/platform_api/web/chat.html

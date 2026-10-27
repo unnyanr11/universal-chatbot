@@ -6,6 +6,7 @@ type Config = {
   welcome_message: string;
   description: string;
   color: string;
+  font_family?: string;
   tone: string;
   timezone: string;
   languages: string[];
@@ -109,6 +110,20 @@ export function Settings({
             value={draft.color}
             onChange={(e) => setDraft({ ...draft, color: e.target.value })}
           />
+        </label>
+        <label>
+          Font family
+          <select
+            value={draft.font_family || "system-ui"}
+            onChange={(event) =>
+              setDraft({ ...draft, font_family: event.target.value })
+            }
+          >
+            <option>system-ui</option>
+            <option>arial</option>
+            <option>georgia</option>
+            <option>verdana</option>
+          </select>
         </label>
         <label>
           Suggested questions (one per line)

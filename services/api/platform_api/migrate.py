@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 from .database import Base, connect
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 def migrate(url):

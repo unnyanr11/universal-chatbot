@@ -127,6 +127,14 @@ def request_handoff(
                 object_id=ticket.id,
             )
         )
+        from .webhooks import enqueue
+
+        enqueue(
+            db,
+            scope[0].id,
+            "support.opened",
+            {"ticket_id": ticket.id, "conversation_id": conversation.id},
+        )
         db.commit()
     except IntegrityError:
         db.rollback()

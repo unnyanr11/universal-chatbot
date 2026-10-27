@@ -355,6 +355,14 @@ def confirm(
                 object_id=op.id,
             )
         )
+        from .webhooks import enqueue
+
+        enqueue(
+            db,
+            scope[0].id,
+            "booking." + ("cancelled" if op.kind == "cancel" else "confirmed"),
+            {"booking_id": op.booking_id, "operation_id": op.id, "kind": op.kind},
+        )
         db.commit()
     except (IntegrityError, ValueError) as exc:
         db.rollback()

@@ -362,3 +362,91 @@ class AssistantProvider(Base):
     max_tokens: Mapped[int] = mapped_column(default=1024)
     token_parameter: Mapped[str] = mapped_column(default="max_tokens")
     revision: Mapped[int] = mapped_column(default=1)
+
+
+class AssistantIntegration(Base):
+    __tablename__ = "assistant_integrations"
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(default=False)
+    lead_capture: Mapped[bool] = mapped_column(default=False)
+    daily_limit: Mapped[int] = mapped_column(default=100)
+    revision: Mapped[int] = mapped_column(default=1)
+    identity_secret: Mapped[str] = mapped_column(default="")
+
+
+class WidgetSession(Base):
+    __tablename__ = "widget_sessions"
+    digest: Mapped[str] = mapped_column(
+        ForeignKey("sessions.digest", ondelete="CASCADE"), primary_key=True
+    )
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), index=True)
+    revision: Mapped[int]
+    verified: Mapped[bool] = mapped_column(default=False)
+    preview: Mapped[bool] = mapped_column(default=False)
+
+
+class VisitorIdentity(Base):
+    __tablename__ = "visitor_identities"
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), primary_key=True)
+    subject_digest: Mapped[str] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class IdentityNonce(Base):
+    __tablename__ = "identity_nonces"
+    digest: Mapped[str] = mapped_column(primary_key=True)
+    expires_at: Mapped[int]
+
+
+class IntegrationCounter(Base):
+    __tablename__ = "integration_counters"
+    key: Mapped[str] = mapped_column(primary_key=True)
+    total: Mapped[int] = mapped_column(default=1)
+    expires_at: Mapped[int] = mapped_column(default=lambda: int(time.time()) + 172800)
+
+
+class WebsiteReview(Base):
+    __tablename__ = "website_reviews"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), index=True)
+    actor_id: Mapped[str]
+    url: Mapped[str]
+    title: Mapped[str]
+    text: Mapped[str]
+    color: Mapped[str]
+    font_family: Mapped[str]
+    expires_at: Mapped[int]
+
+
+class Lead(Base):
+    __tablename__ = "leads"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str]
+    email: Mapped[str]
+    message: Mapped[str]
+    created_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+
+
+class WebhookEndpoint(Base):
+    __tablename__ = "webhook_endpoints"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    url: Mapped[str]
+    secret: Mapped[str]
+    enabled: Mapped[bool] = mapped_column(default=True)
+
+
+class WebhookDelivery(Base):
+    __tablename__ = "webhook_deliveries"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    endpoint_id: Mapped[str] = mapped_column(ForeignKey("webhook_endpoints.id"), index=True)
+    event: Mapped[str]
+    payload: Mapped[str]
+    state: Mapped[str] = mapped_column(default="pending")
+    attempts: Mapped[int] = mapped_column(default=0)
+    due_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+    lease_until: Mapped[int] = mapped_column(default=0)
+    lease_token: Mapped[str] = mapped_column(default="")
+    error: Mapped[str] = mapped_column(default="")

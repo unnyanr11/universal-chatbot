@@ -30,14 +30,18 @@ def seal(assistant_id, key):
     )
 
 
-def unseal(row):
+def open_secret(context, encrypted):
     try:
-        payload = json.loads(cipher().decrypt(row.encrypted_key.encode()))
-        if payload["assistant_id"] != row.assistant_id:
+        payload = json.loads(cipher().decrypt(encrypted.encode()))
+        if payload["assistant_id"] != context:
             raise ValueError("Credential scope mismatch")
         return payload["key"]
     except (InvalidToken, ValueError, KeyError, TypeError):
         raise ProviderUnavailable(code="PROVIDER_SECRET_KEY_UNAVAILABLE") from None
+
+
+def unseal(row):
+    return open_secret(row.assistant_id, row.encrypted_key)
 
 
 def resolve_provider(request, db, assistant_id):

@@ -8,6 +8,7 @@ from contextlib import aclosing
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
+from .context import widget_active
 from .database import Conversation, Membership, Message, Session, SupportTicket
 from .inference import ProviderUnavailable, stream_completion
 
@@ -56,6 +57,7 @@ def chat_stream(
                 project = db.get(Project, project_id)
                 if (
                     not current
+                    or not widget_active(db, session_digest, assistant_id)
                     or current.expires_at <= time.time()
                     or not project
                     or not db.get(Membership, (user_id, project.organization_id))

@@ -15,5 +15,5 @@
       ]
     }
   },
-  "include": ["*.tsx", "../js-sdk/*.ts"]
+  "include": ["*.tsx", "../js-sdk/*.ts", "../../examples/react.tsx"]
 }

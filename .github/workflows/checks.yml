@@ -87,7 +87,24 @@ jobs:
           printf '%s\n' 'synthetic-installer-owner-password' | python scripts/setup.py --domain '' --provider ollama --owner-email owner@setup.example.test --organization 'Installer test' --password-stdin --no-browser
       - name: Installer rerun preserves existing accounts and database credentials
         run: python scripts/setup.py --no-browser
+      - name: Backup and restore round trip
+        run: |
+          python scripts/maintenance.py backup --output /tmp/assistant-ci.dump
+          python scripts/maintenance.py verify-backup --input /tmp/assistant-ci.dump
+          docker compose exec -T db createdb -U assistant restore_acceptance
+          python scripts/maintenance.py restore --input /tmp/assistant-ci.dump --database restore_acceptance --confirm-empty-database
+          test "$(docker compose exec -T db psql -U assistant -d restore_acceptance -Atc 'SELECT count(*) FROM users')" = "1"
       - name: Validate HTTPS proxy configuration
         run: docker run --rm -e APP_DOMAIN=chat.example.test -v "$PWD/infra/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - if: always()
         run: docker compose logs --tail=60 && docker compose down -v
+
+  wordpress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: bash tests/wordpress_smoke.sh

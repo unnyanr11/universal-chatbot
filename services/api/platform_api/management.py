@@ -20,6 +20,7 @@ from .database import (
     ChatAction,
     Conversation,
     Document,
+    Lead,
     Membership,
     Message,
     Operation,
@@ -47,6 +48,7 @@ class Configuration(BaseModel):
     description: str = Field(default="", max_length=1000)
     color: str = Field(default="#1e5548", pattern=r"^#[0-9a-fA-F]{6}$")
     tone: str = Field(default="friendly", pattern="^(friendly|formal|concise)$")
+    font_family: str = Field(default="system-ui", pattern="^(system-ui|arial|georgia|verdana)$")
     timezone: str = "Asia/Kolkata"
     languages: list[str] = Field(default_factory=lambda: ["en"], min_length=1, max_length=10)
     suggested_questions: list[str] = Field(default_factory=list, max_length=6)
@@ -408,6 +410,14 @@ def export_my_data(scope=Depends(project_scope), session=Depends(identity), db=D
             result[key].append(
                 {column.name: getattr(row, column.name) for column in model.__table__.columns}
             )
+    result["leads"] = [
+        {column.name: getattr(row, column.name) for column in Lead.__table__.columns}
+        for row in db.scalars(
+            select(Lead)
+            .join(Assistant)
+            .where(Assistant.project_id == scope[0].id, Lead.user_id == session.user_id)
+        )
+    ]
     return result
 
 
@@ -456,6 +466,12 @@ def erase_my_data(
         db.execute(
             delete(model).where(model.project_id == scope[0].id, model.user_id == session.user_id)
         )
+    db.execute(
+        delete(Lead).where(
+            Lead.assistant_id.in_(select(Assistant.id).where(Assistant.project_id == scope[0].id)),
+            Lead.user_id == session.user_id,
+        )
+    )
     # Pseudonymise existing audit actor references; retain payload-free operational events.
     db.execute(
         update(AuditEvent)

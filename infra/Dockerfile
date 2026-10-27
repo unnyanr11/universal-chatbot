@@ -10,6 +10,8 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt pyproject.toml ./
 COPY services ./services
+COPY packages/wordpress ./packages/wordpress
+ENV INTEGRATION_PACKAGES_DIR=/app/packages
 COPY --from=frontend /build/services/api/platform_api/web services/api/platform_api/web
 RUN pip install --no-cache-dir . && useradd --create-home assistant
 USER assistant
