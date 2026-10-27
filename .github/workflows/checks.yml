@@ -3,6 +3,7 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,8 +26,15 @@ jobs:
       - run: ruff format --check .
       - run: pytest -q
       - run: python evaluation/run.py
-      - run: npx playwright install --with-deps chromium
+      - name: Prepare browser
+        timeout-minutes: 5
         working-directory: apps/admin
+        run: |
+          if command -v google-chrome >/dev/null; then
+            echo "PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
       - run: npm run test:e2e
         working-directory: apps/admin
       - uses: actions/upload-artifact@v4
