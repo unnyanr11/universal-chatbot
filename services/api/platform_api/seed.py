@@ -1,11 +1,13 @@
 """Explicit development-only fixtures; passwords come from the operator."""
 
 import os
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 
 from .app import passwords
-from .database import Assistant, Membership, Organization, Project, User, connect
+from .database import Assistant, Membership, Organization, Project, Service, Slot, User, connect
 
 
 def seed():
@@ -18,23 +20,49 @@ def seed():
     with sessions.begin() as db:
         for slug, name in [("cedar", "Cedar Repair Studio"), ("harbor", "Harbor Bike Care")]:
             email = f"owner@{slug}.example"
-            if db.scalar(select(User).where(User.email == email)):
-                continue
-            user = User(email=email, password_hash=passwords.hash(password))
-            org = Organization(name=name)
-            db.add_all([user, org])
-            db.flush()
-            project = Project(organization_id=org.id, name=f"{name} demo")
-            db.add(project)
-            db.add(Membership(user_id=user.id, organization_id=org.id, role="owner"))
-            db.flush()
-            db.add(
-                Assistant(
-                    project_id=project.id,
-                    name=f"{name} assistant",
-                    welcome_message="Welcome! This foundation has no knowledge or booking tools yet.",
+            existing = db.scalar(select(User).where(User.email == email))
+            if existing:
+                member = db.scalar(select(Membership).where(Membership.user_id == existing.id))
+                project = db.scalar(
+                    select(Project).where(Project.organization_id == member.organization_id)
                 )
+            else:
+                user = User(email=email, password_hash=passwords.hash(password))
+                org = Organization(name=name)
+                db.add_all([user, org])
+                db.flush()
+                project = Project(organization_id=org.id, name=f"{name} demo")
+                db.add(project)
+                db.add(Membership(user_id=user.id, organization_id=org.id, role="owner"))
+                db.flush()
+                db.add(
+                    Assistant(
+                        project_id=project.id,
+                        name=f"{name} assistant",
+                        welcome_message="Welcome! Ask about our approved sources or browse appointments.",
+                    )
+                )
+            service = db.scalar(select(Service).where(Service.project_id == project.id))
+            if not service:
+                service = Service(
+                    project_id=project.id,
+                    name="Consultation" if slug == "cedar" else "Bike inspection",
+                )
+                db.add(service)
+                db.flush()
+            today = datetime.now(ZoneInfo(service.timezone)).replace(
+                hour=9, minute=0, second=0, microsecond=0
             )
+            for day in range(1, 15):
+                start = today + timedelta(days=day)
+                if start.weekday() >= 5:
+                    continue
+                for hour in [9, 10, 11, 14, 15, 16]:
+                    at = int(start.replace(hour=hour).timestamp())
+                    if not db.scalar(
+                        select(Slot.id).where(Slot.service_id == service.id, Slot.start_at == at)
+                    ):
+                        db.add(Slot(service_id=service.id, start_at=at, end_at=at + 1800))
     engine.dispose()
     print("Seeded synthetic development businesses. Existing accounts were preserved.")
 

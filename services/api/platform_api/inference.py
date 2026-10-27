@@ -1,5 +1,6 @@
 """Local inference boundary; no fake fallback or executable model output."""
 
+import asyncio
 from typing import Protocol
 
 import httpx
@@ -11,12 +12,14 @@ class ProviderUnavailable(Exception):
 
 class ModelProvider(Protocol):
     async def check(self) -> dict: ...
+    async def complete(self, prompt: str) -> str: ...
 
 
 class OllamaProvider:
     def __init__(self, base_url: str, model: str = ""):
         self.base_url = base_url
         self.model = model
+        self._gate = asyncio.Semaphore(1)
 
     async def check(self):
         if not self.model:
@@ -34,6 +37,19 @@ class OllamaProvider:
             return {"status": "unavailable", "reason": "Cannot verify local model server"}
 
     async def complete(self, prompt: str):
+        try:
+            await asyncio.wait_for(self._gate.acquire(), timeout=0.1)
+        except TimeoutError:
+            raise ProviderUnavailable("Local inference is busy; retry later") from None
+        try:
+            async with asyncio.timeout(65):
+                return await self._complete(prompt)
+        except TimeoutError:
+            raise ProviderUnavailable("Local inference exceeded its total deadline") from None
+        finally:
+            self._gate.release()
+
+    async def _complete(self, prompt: str):
         if not self.model:
             raise ProviderUnavailable("Local model is unconfigured")
         try:

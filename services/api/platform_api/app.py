@@ -1,6 +1,5 @@
 """Phase 0 API: opaque revocable sessions and membership-derived authorization."""
 
-import hashlib
 import os
 import secrets
 import time
@@ -9,20 +8,18 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
+from .context import WRITERS, database, digest, identity, project_scope
 from .database import Assistant, LoginWindow, Membership, Project, Session, User, connect
 from .inference import OllamaProvider, ProviderUnavailable
 
 passwords = PasswordHash.recommended()
 dummy_hash = passwords.hash(secrets.token_urlsafe(32))
-bearer = HTTPBearer(auto_error=False)
-WRITERS = {"owner", "administrator", "developer"}
 
 
 class Input(BaseModel):
@@ -43,12 +40,8 @@ class Prompt(Input):
     text: str = Field(min_length=1, max_length=4000)
 
 
-def digest(value):
-    return hashlib.sha256(value.encode()).hexdigest()
-
-
 def create_app(database_url=None, provider=None):
-    app = FastAPI(title="Universal Assistant — Foundation", version="0.1.0")
+    app = FastAPI(title="Universal Assistant Platform", version="0.2.0")
     engine, sessions = connect(
         database_url or os.getenv("DATABASE_URL", "sqlite:///./assistant.db")
     )
@@ -89,32 +82,9 @@ def create_app(database_url=None, provider=None):
             },
         )
 
-    def database():
-        with sessions() as db:
-            yield db
-
-    def identity(
-        credentials: HTTPAuthorizationCredentials | None = Depends(bearer), db=Depends(database)
-    ):
-        if not credentials:
-            raise HTTPException(401, "AUTHENTICATION_REQUIRED")
-        session = db.get(Session, digest(credentials.credentials))
-        if not session or session.expires_at <= time.time():
-            raise HTTPException(401, "SESSION_INVALID")
-        return session
-
-    def project_scope(project_id: str, session=Depends(identity), db=Depends(database)):
-        project = db.get(Project, project_id)
-        membership = (
-            db.get(Membership, (session.user_id, project.organization_id)) if project else None
-        )
-        if not membership:
-            raise HTTPException(404, "PROJECT_NOT_FOUND")
-        return project, membership
-
     @app.get("/health")
     def health():
-        return {"status": "alive", "milestone": "phase-0-partial"}
+        return {"status": "alive", "milestone": "knowledge-and-booking-preview"}
 
     @app.post("/v1/sessions", status_code=201)
     def login(body: Login, db=Depends(database)):
@@ -202,5 +172,31 @@ def create_app(database_url=None, provider=None):
             return {"text": answer, "mode": "ungrounded-model-diagnostic"}
         except ProviderUnavailable:
             raise HTTPException(503, "LOCAL_INFERENCE_UNAVAILABLE") from None
+
+    from .booking import router as booking_router
+    from .knowledge import router as knowledge_router
+
+    app.include_router(knowledge_router)
+    app.include_router(booking_router)
+    from pathlib import Path
+
+    from fastapi.staticfiles import StaticFiles
+
+    web = Path(__file__).parent / "web"
+    if (web / "index.html").exists():
+        app.mount("/", StaticFiles(directory=web, html=True), name="web")
+    else:
+
+        @app.get("/", include_in_schema=False)
+        def frontend_not_built():
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": {
+                        "code": "FRONTEND_NOT_BUILT",
+                        "message": "Run npm ci and npm run build in apps/admin.",
+                    }
+                },
+            )
 
     return app

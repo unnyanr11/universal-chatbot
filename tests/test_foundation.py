@@ -4,35 +4,9 @@ import time
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from platform_api.app import create_app, digest, passwords
-from platform_api.database import Assistant, Membership, Organization, Project, Session, User
+from platform_api.app import create_app, digest
+from platform_api.database import Membership, Session
 from platform_api.inference import OllamaProvider, ProviderUnavailable
-from platform_api.migrate import migrate
-
-
-@pytest.fixture
-def setup(tmp_path):
-    url = f"sqlite:///{tmp_path / 'test.db'}"
-    migrate(url)
-    migrate(url)  # Migration is safe to rerun.
-    app = create_app(url)
-    with app.state.sessions.begin() as db:
-        for name, role in [("cedar", "owner"), ("harbor", "analyst")]:
-            org = Organization(id=name, name=name)
-            user = User(
-                id=name,
-                email=f"{name}@example.test",
-                password_hash=passwords.hash("a-long-test-password"),
-            )
-            db.add_all([org, user])
-            db.flush()
-            db.add(Membership(user_id=name, organization_id=name, role=role))
-            db.add(Project(id=name, name=name, organization_id=name))
-            db.flush()
-            db.add(Assistant(project_id=name, name=f"{name} assistant", welcome_message="Hi"))
-    with TestClient(app) as client:
-        yield client, app
-    app.state.engine.dispose()
 
 
 def auth(client, name="cedar"):
@@ -108,7 +82,13 @@ def test_revocation_expiry_and_membership_removal(setup):
     assert client.get("/v1/projects", headers=headers).status_code == 401
 
 
-def test_login_budget_is_durable(setup):
+def test_login_budget_is_durable(setup, monkeypatch):
+    import importlib
+    from types import SimpleNamespace
+
+    module = importlib.import_module("platform_api.app")
+    now = time.time()
+    monkeypatch.setattr(module, "time", SimpleNamespace(time=lambda: now))
     client, app = setup
     for _ in range(20):
         assert (

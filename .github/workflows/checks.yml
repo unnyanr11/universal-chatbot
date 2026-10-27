@@ -1,4 +1,4 @@
-name: Foundation checks
+name: Platform checks
 on: [push, pull_request]
 jobs:
   test:
@@ -8,7 +8,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/admin/package-lock.json
       - run: pip install -r requirements.txt
+      - run: pip install --no-deps -e .
+      - run: npm ci
+        working-directory: apps/admin
+      - run: npm run build
+        working-directory: apps/admin
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+      - run: python evaluation/run.py
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/admin
+      - run: npm run test:e2e
+        working-directory: apps/admin
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: apps/admin/test-results

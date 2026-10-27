@@ -1,0 +1,5 @@
+[
+  {"question":"What are Cedar's opening hours?", "source":"hours", "must_include":"09:00"},
+  {"question":"Tell me about bicycle repairs", "source":"services", "must_include":"bicycle"},
+  {"question":"Explain the fusion reactor warranty", "source":null, "must_include":"enough information"}
+]

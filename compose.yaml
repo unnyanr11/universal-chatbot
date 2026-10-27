@@ -35,6 +35,16 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+  worker:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+    environment: *api-env
+    command: [python, -m, platform_api.worker]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
   ollama:
     image: ollama/ollama:0.11.4
     volumes:

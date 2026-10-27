@@ -1,17 +1,18 @@
 # Verification — 27 October 2026
 
-Executed in this environment:
+Observed locally for the knowledge/booking preview:
 
-- Dependency installation succeeded in a fresh Python 3.12 virtual environment.
-- `ruff check .` passed; `ruff format --check .` passed.
-- `pytest -q`: 6 passed in approximately 3 seconds.
-- `pip check`: no broken requirements.
-- Explicit migration and synthetic seed succeeded against a separate native SQLite database.
-- Live Uvicorn HTTP smoke: health, seeded login, scoped project list, draft creation, logout and revoked-token rejection passed.
-- Doctor: approximately 9.7 GiB visible RAM, 29.7 GiB free disk; Docker/Ollama absent, GPU not measured, provider unconfigured.
+- Python 3.12 environment with pinned Python dependencies installed successfully.
+- React/TypeScript production build passed (`tsc --noEmit && vite build`), including the modular screens and typed HTTP client.
+- Python lint and formatting passed.
+- 14 backend tests passed. They exercise real SQLite writes for tenant boundaries, sessions, roles, ingestion/worker execution, actual PDF extraction, source removal/redaction, SSE final events, job lease recovery, booking ownership, duplicate confirmations, competing last-slot commits, expiring confirmations and rescheduling rollback.
+- Three synthetic lexical retrieval smoke cases passed. This is not model accuracy, multilingual validation or a portfolio performance benchmark.
+- Full live Uvicorn/worker HTTP journey passed: compiled UI/loader delivery, login, upload, real worker extraction, cited chat, service/slot lookup, booking, idempotent confirmation retry, cancellation and source deletion. This verifies HTTP integration, not browser rendering.
 
-A Starlette warning reports that its httpx TestClient integration is deprecated in favour of httpx2. The installed, pinned combination still passes tests; migrate the test transport before a future dependency upgrade removes compatibility.
+Adapter transport tests use a clearly labelled HTTP double and do not count as real AI inference. Booking integration tests use the actual local booking tables and constraints, not mocked booking success.
 
-The first live smoke attempt inherited the host's SOCKS proxy setting and failed before making requests. A second attempt could not reach a server started in a separate execution session. Running server and client together with environment proxy discovery disabled passed. The application Ollama adapter already disables environment proxy discovery for local inference.
+Browser acceptance is not verified locally: Playwright was installed but Chromium archive downloads were invalid in this environment. Real UI/widget E2E tests are included for CI; adding them does not mean they passed. No screenshot or visual QA claim is made.
 
-Not executed: Docker build/Compose, PostgreSQL migration/concurrency, actual model download/inference, React/browser/mobile checks, vulnerability/complete licence scans. Adapter tests use an explicitly labelled HTTP transport double and do not count as real AI inference. No knowledge, booking, external side-effect or production-security acceptance is claimed.
+Not verified here: PostgreSQL migrations/concurrency, Docker build/Compose, actual Ollama model inference, target-user hardware latency, semantic retrieval, mobile integration, external delivery, security audit or complete transitive licence inventory. No adoption or business-impact metrics are claimed.
+
+Known dependency warning: Starlette currently deprecates its httpx TestClient bridge in favour of httpx2. The pinned bridge still passes the suite; migrate before upgrading to a version that removes it.

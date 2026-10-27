@@ -7,3 +7,11 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+node_modules/
+services/api/platform_api/web/assets/
+services/api/platform_api/web/index.html
+services/api/platform_api/web/widget-loader.js
+services/api/platform_api/web/demo-embed.html
+services/api/platform_api/web/demo-embed.js
+apps/admin/test-results/
+apps/admin/playwright-report/
