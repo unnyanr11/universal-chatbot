@@ -11,7 +11,7 @@ Observed locally for the knowledge/booking preview:
 
 Adapter transport tests use a clearly labelled HTTP double and do not count as real AI inference. Booking integration tests use the actual local booking tables and constraints, not mocked booking success.
 
-Browser acceptance is not verified locally: Playwright was installed but Chromium archive downloads were invalid in this environment. Real UI/widget E2E tests are included for CI; adding them does not mean they passed. No screenshot or visual QA claim is made.
+Browser acceptance passed in GitHub CI after fixing the service selector’s accessible name. Both Playwright journeys passed: upload → ingestion → cited chat/source preview → booking → cancellation → source deletion, and authentication/chat through the actual iframe loader. Run: https://github.com/unnyanr11/universal-chatbot/actions/runs/40477348625 . Local Chromium downloads still returned invalid archives, so browser execution used the CI runner. No screenshot or pixel-level visual QA claim is made.
 
 Not verified here: PostgreSQL migrations/concurrency, Docker build/Compose, actual Ollama model inference, target-user hardware latency, semantic retrieval, mobile integration, external delivery, security audit or complete transitive licence inventory. No adoption or business-impact metrics are claimed.
 

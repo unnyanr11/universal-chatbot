@@ -95,7 +95,7 @@ def test_login_budget_is_durable(setup, monkeypatch):
             client.post("/v1/sessions", json={"email": "a@b", "password": "wrong"}).status_code
             == 401
         )
-    second = TestClient(create_app(str(app.state.engine.url)))
+    second = TestClient(create_app(app.state.engine.url.render_as_string(hide_password=False)))
     assert (
         second.post("/v1/sessions", json={"email": "a@b", "password": "wrong"}).status_code == 429
     )
