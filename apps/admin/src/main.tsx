@@ -175,7 +175,7 @@ function App() {
             <h1>{widget ? (current?.name ?? "Assistant") : tab}</h1>
           </div>
           <div className="header-right">
-            <span className="badge">Development preview</span>
+            <span className="badge">Self-hosted workspace</span>
             <select
               aria-label="Assistant"
               value={assistant}

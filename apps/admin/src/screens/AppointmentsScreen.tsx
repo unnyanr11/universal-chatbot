@@ -36,7 +36,8 @@ export function AppointmentsScreen({ studio }: { studio: StudioState }) {
           </h3>
           {services.length === 0 && (
             <p className="muted">
-              Run the seed command to create demo services and schedules.
+              A workspace owner can add services, staff and availability in
+              Calendars.
             </p>
           )}
           <label>
@@ -74,8 +75,8 @@ export function AppointmentsScreen({ studio }: { studio: StudioState }) {
           </div>
           {service && slots.length === 0 && (
             <p className="muted">
-              No available slots. Choose another service or refresh the seeded
-              schedule.
+              No available slots. Choose another service or ask a workspace
+              owner to generate availability in Calendars.
             </p>
           )}
         </section>

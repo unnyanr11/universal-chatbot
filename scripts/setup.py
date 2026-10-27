@@ -29,6 +29,7 @@ def run(command, *, capture=False, data=None, env=None):
         cwd=ROOT,
         env=env,
         input=data,
+        stdin=subprocess.DEVNULL if data is None else None,
         text=True,
         stdout=subprocess.PIPE if capture else None,
         check=False,

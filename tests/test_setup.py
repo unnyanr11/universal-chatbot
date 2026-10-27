@@ -71,3 +71,11 @@ def test_installer_preserves_credentials_and_validates_public_input(tmp_path):
         installer.configure(values, domain=None, port=-1, source_only=False)
     baseline = installer.configure(values, domain=None, port=None, source_only=True)
     assert baseline["OLLAMA_MODEL"] == baseline["OLLAMA_EMBED_MODEL"] == ""
+
+
+def test_installer_child_processes_receive_only_explicit_input():
+    import sys
+
+    command = [sys.executable, "-c", "import sys; print(sys.stdin.read(), end='')"]
+    assert installer.run(command, capture=True) == ""
+    assert installer.run(command, capture=True, data="synthetic-input") == "synthetic-input"
