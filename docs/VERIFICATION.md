@@ -2,19 +2,21 @@
 
 ## Verified source
 
-Source commit `dd63dc85d9ae3ef001fd14962590f12bcc43847c` passed GitHub run https://github.com/unnyanr11/universal-chatbot/actions/runs/40503281046. This document is a subsequent documentation-only update; the linked run identifies the exact tested code.
+Source commit `3f976d228d0ba3a041633065792faefc69bcad1d` passed GitHub run https://github.com/unnyanr11/universal-chatbot/actions/runs/40514822888. This document is a subsequent documentation-only update; the linked run identifies the exact tested code.
 
 | Check | Observed result |
 |---|---|
-| SQLite backend | 59 passed, 1 PostgreSQL-specific test skipped |
-| PostgreSQL 17 backend | 60 passed |
-| Chromium acceptance | All 7 Playwright journeys passed |
+| SQLite backend | 73 passed, 1 PostgreSQL-specific test skipped |
+| PostgreSQL 17 backend | 74 passed |
+| Browser acceptance | All 8 Playwright journeys passed |
 | Frontend and clients | React/TypeScript production build and reusable React component type check passed |
 | Python hygiene | Ruff lint and format checks passed |
 | Synthetic retrieval | All 3 evaluation cases passed |
 | Actual local models | SmolLM2 135m and 360m completion/token streaming passed; authenticated API SSE path passed |
 | Semantic ingestion | Actual all-minilm embeddings, durable worker indexing and semantic retrieval passed |
 | Guided Docker installation | Fresh install and rerun passed with real models, generated database credentials, initial owner/assistant and starter-guide worker indexing |
+| WordPress/MySQL | Real activation, settings validation, rendered public widget attributes and deactivation passed |
+| Backup/restore | PostgreSQL archive, archive validation and restore into an empty separate database passed |
 | HTTPS configuration | Caddy configuration validation passed; public DNS/certificates are checked by the wizard on the destination server |
 
 Backend checks cover tenant isolation, source deletion/redaction, publish/rollback pinning, tool boundaries, owned conversations, handoff privacy, workspace erasure, consent, membership/session controls, workflow dry-run/version/recovery and concurrent booking invariants. Calendar coverage includes shared staff capacity across services, policy invalidation of pending approval, DST ambiguity rejection and a PostgreSQL policy-edit/confirmation race. Request bounds cover declared and chunked payloads before parsing.
@@ -31,7 +33,7 @@ Known dependency warning: the pinned Starlette TestClient bridge reports its htt
 
 The source run above invoked `scripts/setup.py` in a fresh CI environment with actual model downloads and a password supplied over stdin. The installer built/started the full Compose stack, created the initial owner and assistant, completed real model/embedding checks and indexed the getting-started guide. A second invocation completed with existing accounts/database credentials preserved. The backend suite independently verifies login to the bootstrapped workspace, preservation of existing users, safe configuration persistence and explicit child-process stdin isolation.
 
-All seven browser journeys and both database suites passed on the same source commit. Public certificate issuance was not exercised against a real domain in CI: Caddy configuration validation passed, and the installer waits for verified public HTTPS on the operator's chosen domain before declaring a public deployment complete. No public host or DNS record was created in this work.
+All eight browser journeys and both database suites passed on the same source commit. Public certificate issuance was not exercised against a real domain in CI: Caddy configuration validation passed, and the installer waits for verified public HTTPS on the operator's chosen domain before declaring a public deployment complete. No public host or DNS record was created in this work.
 
 ## Cloud-provider acceptance
 
@@ -41,6 +43,12 @@ The seventh Playwright journey saves all six cloud presets, verifies that respon
 
 The Docker job passed real Ollama completion/streaming, authenticated application SSE, embeddings, first install, installer rerun and Caddy configuration validation with the new provider configuration. No cloud credentials were supplied, so live cloud-account/model acceptance remains unverified. `evaluation/cloud_smoke.py` provides explicit real completion/streaming checks for an operator's selected account; usage may be billed. See PROVIDERS.md for configuration, privacy and compatibility limits.
 
-## Guided integration extension — awaiting source CI
+## Guided integration acceptance
 
-The extension includes templates, reviewed website ingestion/styling, private draft preview, published guest chat, stable signed identity, enquiry capture, installation/diagnostic screens, a WordPress package, scoped signed webhook outbox, integration examples and backup/update/restore commands. Local existing backend and new boundary tests pass; expanded browser, real WordPress and backup/restore CI gates have been added. Their final observed source result will be recorded when the run completes. No external deployment, actual customer website import, paid cloud request or real webhook receiver contact is claimed.
+The verified source includes templates, explicit website text review/import and colour/font suggestions, isolated private draft previews, published guest chat, stable signed host identity, optional enquiry/support/verified-booking controls, public UTC-day attempt limits, installation/diagnostic screens, a WordPress ZIP, approved signed webhook outbox, client examples and guarded backup/update/restore commands.
+
+The eighth real browser journey exercised a published guest iframe without login, sourced chat/citations, consented enquiry submission, template changes, private preview of unpublished material and continued exclusion of that material from a new public session. The backend suite additionally checked route/tenant/ownership isolation, request limits, assertion expiry/replay, reviewed import and DNS exclusions, signature verification/retry with stable event IDs, disabled optional features and migration from schema revision eight with new features disabled. The current schema revision is nine.
+
+A separate CI job ran real WordPress/PHP/MySQL, installed and activated the plugin, validated settings sanitization, fetched frontend HTML containing the correctly scoped public widget, then deactivated it and verified removal. The Docker job passed fresh setup/rerun and a pg_dump/pg_restore round trip into a separately created empty database. Archive readability and restored owner-row count were checked; no existing database was overwritten. The destructive update/rollback of a real production deployment was not executed.
+
+Website-fetch boundary tests and external webhook delivery tests use explicit test doubles. No private/customer website, real receiver or paid cloud account was contacted during authoring. The static installation checker does not claim runtime browser/CSP verification. Public domain DNS/certificates, production load, native mobile and independent security/compliance acceptance remain deployment-specific checks. INTEGRATION.md documents those limits and the actual launch path.
