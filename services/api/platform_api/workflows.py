@@ -1,6 +1,7 @@
 """Durable, bounded JSON workflows over an explicit set of local operations."""
 
 import json
+import re
 import time
 from typing import Literal
 
@@ -74,6 +75,7 @@ class ResumeRun(BaseModel):
     revision: int = Field(ge=1)
     value: str | int | bool | None = None
     approve: bool = False
+    recover: bool = False
 
 
 def own_run(db, run_id, project_id, user_id):
@@ -100,6 +102,7 @@ def run_record(db, run):
         "cursor": run.cursor,
         "revision": run.revision,
         "dry_run": run.dry_run,
+        "lease_until": run.lease_until,
         "variables": json.loads(run.variables),
         "trace": json.loads(run.trace),
         "next": current.model_dump() if current else None,
@@ -241,6 +244,8 @@ def drive(db, run, scope, session, revision, value=None, approve=False, initial=
         run = db.get(WorkflowRun, run.id)
         run.state = "failed"
         code = str(exc.detail) if isinstance(exc, HTTPException) else str(exc)
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,100}", code):
+            code = "WORKFLOW_STEP_FAILED"
         trace.append(
             {"node": run.cursor, "type": node.type, "state": "failed", "error": code[:200]}
         )
@@ -393,7 +398,11 @@ def resume(
     db=Depends(database),
 ):
     run = own_run(db, run_id, scope[0].id, session.user_id)
-    return drive(db, run, scope, session, body.revision, body.value, body.approve)
+    if body.recover and (body.value is not None or body.approve):
+        raise HTTPException(422, "RECOVERY_CANNOT_INCLUDE_INPUT_OR_APPROVAL")
+    return drive(
+        db, run, scope, session, body.revision, body.value, body.approve, initial=body.recover
+    )
 
 
 @router.post("/workflow-runs/{run_id}/cancel")
@@ -417,5 +426,17 @@ def cancel(
     ).scalar_one_or_none()
     if not changed:
         raise HTTPException(409, "WORKFLOW_NOT_CANCELLABLE_REFRESH")
+    operation_id = json.loads(run.variables).get("_operation")
+    if operation_id:
+        db.execute(
+            update(Operation)
+            .where(
+                Operation.id == operation_id,
+                Operation.user_id == session.user_id,
+                Operation.project_id == scope[0].id,
+                Operation.state == "awaiting_confirmation",
+            )
+            .values(state="cancelled")
+        )
     db.commit()
     return run_record(db, run)

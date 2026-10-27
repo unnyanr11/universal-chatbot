@@ -1,3 +1,4 @@
+import { InlineBooking } from "../features/InlineBooking";
 import { ChatContinuity } from "../features/ChatContinuity";
 import { type StudioState } from "../useStudio";
 import { client, localTime, widget, type Assistant } from "../model";
@@ -96,6 +97,9 @@ export function ChatScreen({ studio }: { studio: StudioState }) {
                         : "ASSISTANT · CHECK SOURCES"}
               </small>
               <p>{m.text}</p>
+              {m.action && (
+                <InlineBooking key={m.action.id} action={m.action} />
+              )}
               {m.citations?.map((c, n) => (
                 <button
                   className="citation"

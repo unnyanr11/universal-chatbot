@@ -1,10 +1,12 @@
-"""Explicit initial schema migration. Future schema changes require numbered migrations."""
+"""Additive schema revisions. These revisions add tables; future alterations need explicit DDL."""
 
 import os
 
 from sqlalchemy import text
 
 from .database import Base, connect
+
+SCHEMA_VERSION = 6
 
 
 def migrate(url):
@@ -14,20 +16,14 @@ def migrate(url):
             text("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
         )
         version = conn.execute(text("SELECT MAX(version) FROM schema_version")).scalar()
-        if version is None:
-            Base.metadata.create_all(conn)
-            conn.execute(text("INSERT INTO schema_version VALUES (1)"))
-        elif version not in (1, 2, 3, 4):
+        if version is not None and version not in range(1, SCHEMA_VERSION + 1):
             raise RuntimeError("Unsupported schema version")
-        if version is None or version < 2:
+        if (version or 0) < SCHEMA_VERSION:
             Base.metadata.create_all(conn)
-            conn.execute(text("INSERT INTO schema_version VALUES (2)"))
-        if version is None or version < 3:
-            Base.metadata.create_all(conn)
-            conn.execute(text("INSERT INTO schema_version VALUES (3)"))
-        if version is None or version < 4:
-            Base.metadata.create_all(conn)
-            conn.execute(text("INSERT INTO schema_version VALUES (4)"))
+            for revision in range((version or 0) + 1, SCHEMA_VERSION + 1):
+                conn.execute(
+                    text("INSERT INTO schema_version VALUES (:version)"), {"version": revision}
+                )
     engine.dispose()
 
 

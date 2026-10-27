@@ -2,7 +2,7 @@
 
 ## Hardware and cost
 
-Build environment: Python 3.12.14, approximately 9.7 GiB visible system RAM and 29.7 GiB free disk at check time; GPU/VRAM unknown. Docker and Ollama are absent. These observations are not tested inference requirements. The API/test suite ran on CPU; no inference benchmark, memory peak, token throughput or minimum model requirements were measured.
+Build environment: Python 3.12.14, approximately 9.7 GiB visible system RAM and 29.7 GiB free disk at check time; GPU/VRAM unknown. Docker and Ollama are absent. These observations are not tested inference requirements. The authoring API/test suite ran on CPU without a local model server. Separate CI model observations are recorded in BENCHMARKS.md; no minimum hardware or production throughput is inferred.
 
 The application has no paid API dependency. Source-passage mode needs no model. Downloading model weights requires network/storage; CPU/GPU inference uses electricity and hardware capacity. Public hosting, delivery services and cloud inference can incur costs. No unlimited or always-on free service is promised. Select models only after measuring target hardware and reviewing licences.
 
@@ -23,3 +23,15 @@ For Compose, use `docker compose exec -T db pg_dump -U assistant -d assistant > 
 - Compose seeding failure: use a unique password at least 16 characters and APP_ENV=development.
 
 In-app reminder records are real local notifications. No email/SMS delivery, deployments or external accounts were created. Publish only after reviewing the security backlog and completing missing checks.
+
+## Updated release operations
+
+Always run `python -m platform_api.migrate` before starting an updated checkout; the current additive schema revision is 6. Stop services and take an authorised backup before upgrading an existing deployment. The migration refuses a newer unsupported schema version. These revisions add tables; future destructive/type changes require explicit reviewed migrations.
+
+The worker handles ingestion leases, reminder delivery and expired session/invitation/preference cleanup. If the database is temporarily unavailable, Compose restarts the worker; a native operator may need to restart its process. Workflow runs checkpoint in the database. The Workflows UI can recover an interrupted run after its 90-second lease expires, without replaying a completed booking.
+
+Changing a managed service policy invalidates pending approvals and old availability bindings. Generate new availability for the desired future date window afterward. Already confirmed bookings remain reserved; changing a policy is not a mass cancellation. Staff resources are capacity one; do not model multi-seat resources without extending and testing the allocator.
+
+Use `python -m platform_api.bootstrap` for the first non-demo owner in an empty database. The Team screen creates local one-time invitation links, not email delivery. The Privacy screen supports password rotation and all-session logout; account recovery requires an operator procedure and is not an automated email/SMS feature.
+
+CI has verified the Compose stack and real local model runtime; see VERIFICATION.md and BENCHMARKS.md. Those measurements are CPU smoke observations, not minimum hardware or uptime guarantees. Store model volumes separately from protected data backups if desired; source bytes/embeddings and user records live in the relational database.

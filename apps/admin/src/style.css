@@ -1046,3 +1046,42 @@ summary {
   padding: 7px;
   max-width: 200px;
 }
+.policy-editor {
+  font:
+    12px ui-monospace,
+    SFMono-Regular,
+    monospace;
+  width: 100%;
+  min-height: 360px;
+}
+.tool-contract {
+  border-top: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+.tool-contract .tool-row {
+  border: 0;
+  padding-bottom: 6px;
+}
+.tool-contract details {
+  margin-top: 0;
+}
+.inline-booking {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #ccd9c1;
+  background: #fff;
+  border-radius: 8px;
+}
+.inline-booking strong {
+  display: block;
+  margin-top: 15px;
+}
+.inline-booking .slot-choice {
+  display: block;
+  width: 100%;
+  font-size: 11px;
+  margin: 8px 0;
+}
+.inline-booking .primary {
+  margin-right: 8px;
+}

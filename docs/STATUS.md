@@ -1,44 +1,27 @@
-# Feature ledger
+# Feature ledger — local platform release
 
-No phase is declared complete while its acceptance gates remain missing.
+The working local release is distinct from optional enterprise/provider features. Entries below describe actual paths; test status is recorded in VERIFICATION.md.
 
-| Capability | Status | Working path / limitation |
+| Area | Implemented | Boundary |
 |---|---|---|
-| Relational schema and numbered additive migrations | Implemented, SQLite/PostgreSQL verified | Initial/additive schema and repeatable migration; PostgreSQL suite passed in CI |
-| Authentication, token expiry/logout, login budget | Implemented | Argon2, hashed opaque sessions; global budget can be exhausted by another user |
-| Tenant/project access and write roles | Implemented for existing routes | Membership checked on every protected route; invitations/member UI pending |
-| Two synthetic businesses | Implemented | Explicit dev seed, separate assistants/services/schedules |
-| React admin | Implemented preview | Overview, Knowledge, Chat, Appointments, Tools, Integrate; browser journeys passed in GitHub CI |
-| Draft assistant creation | Partial | Create when project has no assistant; API can create additional drafts; publishing/history/config UI pending |
-| TXT/Markdown/CSV/DOCX/text-PDF ingestion | Implemented | 2 MB upload; bounded subprocess extraction; DOCX has logical page 1; no OCR |
-| Durable ingestion | Implemented | Atomic job claim, lease, bounded attempts, visible failure; transient DB outage may require process restart |
-| Retrieval | Implemented baseline | Tenant-scoped lexical ranking; embeddings/hybrid/reranker not implemented |
-| Chat and citations | Implemented baseline | Quoted source passages and live source previews; generative model optional/unverified |
-| Source deletion | Implemented for live DB | Removes file bytes/chunks/jobs and redacts stored answers citing them; browser copies/backups are separate |
-| Conversations | Partial | Owned server history, list/get/delete API; UI current conversation only, no branch/edit/regenerate |
-| Ollama | Partial | Adapter contract tested; real inference/model licence/hardware evaluation pending |
-| Chat SSE | Partial | Validated final-result/done events; no model token streaming |
-| Isolated website widget | Authenticated preview | Lazy iframe, Shadow DOM launcher, destroy event; no postMessage commands; guest/domain/host identity pending |
-| Typed JS client | Partial | HTTP/errors/abort; no React/Native/Flutter package yet |
-| Local booking | Implemented bounded reference | Browse service/absolute slots, create/reschedule/cancel, own bookings, receipts |
-| Booking confirmations/idempotency | Implemented | Immutable expiring user-bound operation, atomic capacity, version checks, durable receipts |
-| Booking calendar policy | Partial | Seeded weekday schedule, one service resource, fixed 30-minute slots, one-hour lead time, future-only cancellation; no staff/holidays/buffers/capacity editor |
-| Reminder delivery | Implemented in-app | Versioned deduplication and scheduled/cancelled/delivered state; worker recovery; API inbox (UI inbox pending); no email/SMS |
-| Tool inventory | Partial | Read-only inventory of implemented booking functions; generic registry/JSON schema SDK pending |
-| External tools | Unconfigured/unimplemented | No email/calendar/commerce provider; no fake success |
-| Docker Compose | Unverified as a full stack | PostgreSQL backend suite passed separately in GitHub CI; local Docker is unavailable |
-| E2E browser tests | Verified in GitHub CI | Two real-browser journeys passed: knowledge/booking and authenticated iframe chat. Local Chromium download remains unavailable. |
-| FAQ evaluation | Implemented smoke baseline | Three synthetic cases; not a measured general model benchmark |
-| Workflow builder, support inbox, memory | Planned | Not shipped as disconnected screens |
-| Full privacy export, audit and analytics | Planned | No unsupported compliance or resolution claims |
-| React Native, voice, Flutter, cloud | Optional later milestones | No adapters silently enabled |
+| Local operation | Native Python/Node and Docker Compose with PostgreSQL, API, worker, Ollama | No mandatory paid API; model downloads/storage/electricity still apply |
+| Tenants and onboarding | Organisations, projects, owner onboarding/bootstrap, assistants, membership-scoped routes | Project visibility is organisation-wide; use separate deployments/credentials for separate environments |
+| Identity | Argon2, hashed one-hour opaque sessions, logout/all-session revoke, password change, invitation links, membership removal, last-owner guard | Invitations are local links; no real email or SSO; no account recovery provider |
+| Admin and widget | React Studio screens, authenticated lazy iframe widget, configurable branding/welcome/questions, embedding CSP allowlist | No anonymous guest identity or signed host identity; no arbitrary postMessage bridge |
+| Configuration | Validated draft saves, optimistic revisions, immutable published manifests, rollback, JSON import/export | Published knowledge IDs/hashes are pinned; model tags are recorded but not immutable model-file digests |
+| Knowledge | TXT/Markdown/CSV/DOCX/text PDF, deduplication, bounded extraction process, leased durable jobs, visible failure, source previews | 2 MB per upload; no OCR/crawler; DOCX logical page 1; CSV indexed as text |
+| Retrieval | Lexical baseline, optional local semantic vectors and reciprocal-rank hybrid retrieval; debugger with ranked passages | Up to 5,000 chunks/query; semantic ingestion up to 64 chunks/document; no reranker |
+| Answers | Source-passage baseline, optional Ollama generation, live citations, provisional token SSE, cancellation and bounded inference | A valid citation does not prove factual correctness; small smoke models are not recommended as a quality guarantee |
+| Deletion and continuity | Owned history/resume/export/delete, source removal/index cleanup, stored cited-answer redaction, post-inference access checks | Already-delivered browser copies/backups cannot be recalled; message edit/branch/regenerate UI is not implemented |
+| Booking | Services, staff, opening periods/breaks, holidays, durations, buffers, lead times, windows, cancellation cutoffs, generated absolute slots, DST ambiguity handling | Managed capacity is one appointment per staff member; legacy seeded services use fixed per-slot capacity; no prices/payments or multi-seat resource allocator |
+| Booking reliability | Immutable expiring previews, user-bound confirmation, atomic staff/slot capacity, idempotent receipts, rescheduling rollback, current policy/version checks | Local database writes only; no claims of exactly-once arbitrary external effects |
+| Notifications | Durable versioned in-app reminders, restart recovery, cancellation/deduplication and inbox | No real email/SMS/push provider |
+| Tools | Allowlisted versioned local contracts, input/output validation, read execution, write proposals, sandbox/dry-run preview, authoritative operation records | No unrestricted HTTP/SQL/code; imported OpenAPI, OAuth/webhooks and generic external connectors remain unimplemented |
+| Workflows | Visual sequence editor over validated JSON, immutable versions, typed input, validation, forward branches, local reads, booking proposals/approval, checkpointed runs, recovery/cancel and traces | 30-node acyclic budget; no arbitrary code, timer/event wait, universal compensation or general visual graph canvas |
+| Human support | Real queue, claim/ownership, human replies, private notes, automation pause, return to assistant, resolution and audit | No live-agent presence/availability service; user must refresh replies; no promise of immediate support |
+| Memory and privacy | Explicit-consent expiring preference records, view/delete, workspace data export/erasure, expired-record worker cleanup | Only up to three active, owned preferences guide local-model tone; account and shared business data remain after workspace erasure |
+| Operations | Payload-free audit events and measured conversation/booking/operation/ticket counts | No invented resolution, latency, cost, accuracy or adoption metrics; no security/compliance certification |
+| Integrations | Typed JS/SSE client, reusable React component, React Native/Expo source example and HTTP schema | React type-checked; mobile device/emulator acceptance remains outstanding; Flutter/voice/cloud are optional and unimplemented |
+| Evaluation | Synthetic FAQ baseline, deterministic policy/concurrency/grounding tests, real model completion/stream/embedding smoke, browser flows, PostgreSQL and Compose CI | Broader human-reviewed answer quality, multilingual/adversarial evaluations and production-scale load tests remain future release gates |
 
-Next acceptance work: run Compose/real-model tests, add local embeddings and streaming, extend calendar policies, then implement generic tool registry, human support, signed client identity and durable workflows. External credentials do not block independent local features.
-
-## Current extension (verification in progress)
-
-Implemented paths now include versioned configuration/publish/rollback with pinned source manifests; owned conversation history/export; a human inbox with assignments, private notes and paused automation; opt-in expiring preference records; workspace personal-data export/deletion; payload-free audit events and measured analytics; a bounded durable workflow editor/engine with dry runs, checkpoints, expiring booking approval and version pinning.
-
-Local semantic/hybrid retrieval, batched embedding ingestion and provisional token streaming are implemented behind the local provider boundary. Provider transport tests are separate from real inference. A CI job downloads two Apache-2.0 SmolLM2 configurations and all-minilm weights to exercise actual completion, streaming, embeddings and the Compose stack. Results must be observed before declaring those paths verified.
-
-The earlier ledger describes the previous committed baseline; it will be reconciled after this extension's database/browser/runtime checks. No unsupported external provider is reported connected.
+No external provider is silently simulated. Unconfigured email reports unavailable. Optional adapters require reviewed implementation and, where applicable, credentials and separate user authorisation for real external effects.

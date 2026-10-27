@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { client } from "../model";
 import { ErrorNotice, useResource, useTask } from "./shared";
 type Node = {
@@ -22,6 +22,7 @@ type Run = {
   revision: number;
   dry_run: boolean;
   cursor: number;
+  lease_until?: number;
   next: Node | null;
   trace: { node: number; type: string; state: string; error?: string }[];
   approval?: {
@@ -69,6 +70,7 @@ const types = [
   "end",
 ];
 export function Workflows({ project }: { project: string }) {
+  const editor = useRef<HTMLElement | null>(null);
   const root = `/v1/projects/${project}`;
   const [tick, setTick] = useState(0),
     [draft, setDraft] = useState<Definition>(structuredClone(template)),
@@ -97,6 +99,13 @@ export function Workflows({ project }: { project: string }) {
     }));
   }
   async function save() {
+    if (
+      editor.current &&
+      !Array.from(editor.current.querySelectorAll("textarea")).every((input) =>
+        input.reportValidity(),
+      )
+    )
+      return;
     await job.task(async () => {
       if (selected) {
         const result = await client.request<{ version: number }>(
@@ -140,7 +149,7 @@ export function Workflows({ project }: { project: string }) {
     <>
       <ErrorNotice error={job.error || error} />
       <div className="booking-grid">
-        <section className="panel">
+        <section className="panel" ref={editor}>
           <h2>Workflow builder</h2>
           <p className="muted">
             A bounded sequence of validated steps. Forward branches are
@@ -267,7 +276,7 @@ export function Workflows({ project }: { project: string }) {
                   Arguments (JSON; use $variable for mappings)
                   <textarea
                     defaultValue={JSON.stringify(node.arguments ?? {})}
-                    key={node.type + index}
+                    key={selected + node.type + index}
                     onBlur={(e) => {
                       try {
                         nodeChange(index, {
@@ -500,6 +509,36 @@ export function Workflows({ project }: { project: string }) {
                 >
                   Cancel run
                 </button>
+              )}
+              {run.state === "running" && (
+                <>
+                  <p className="muted">
+                    Interrupted or active run. Recovery is available after its
+                    lease expires.
+                  </p>
+                  <button
+                    disabled={job.busy}
+                    onClick={() =>
+                      job.task(async () => {
+                        setRun(
+                          await client.request<Run>(
+                            root + `/workflow-runs/${run.id}/resume`,
+                            {
+                              method: "POST",
+                              body: JSON.stringify({
+                                revision: run.revision,
+                                recover: true,
+                              }),
+                            },
+                          ),
+                        );
+                        setTick((v) => v + 1);
+                      })
+                    }
+                  >
+                    Recover interrupted run
+                  </button>
+                </>
               )}
               <h3>Execution trace</h3>
               {run.trace.map((step, i) => (

@@ -1,5 +1,6 @@
 """Real local bookings: immutable proposals, atomic reservations and retry receipts."""
 
+import json
 import time
 from datetime import datetime, timezone
 
@@ -8,8 +9,28 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
+from .calendars import (
+    bind_operation,
+    eligible,
+    reserve_resource,
+    revalidate_operation,
+    service_policy,
+)
 from .context import database, identity, project_scope
-from .database import Booking, Operation, Reminder, Reservation, Service, Slot
+from .database import (
+    AuditEvent,
+    Booking,
+    Operation,
+    OperationPolicy,
+    Reminder,
+    Reservation,
+    ResourceReservation,
+    Service,
+    ServicePolicy,
+    Slot,
+    SlotResource,
+    Staff,
+)
 
 router = APIRouter(prefix="/v1/projects/{project_id}")
 
@@ -35,7 +56,10 @@ def slot_details(db, slot_id, project_id):
     if not row:
         raise HTTPException(404, "SLOT_NOT_FOUND")
     slot, service = row
+    binding = db.get(SlotResource, slot.id)
+    staff = db.get(Staff, binding.staff_id) if binding else None
     return {
+        "staff": staff.name if staff else None,
         "slot_id": slot.id,
         "service": service.name,
         "start_at": iso(slot.start_at),
@@ -46,6 +70,16 @@ def slot_details(db, slot_id, project_id):
 
 
 def receipt(db, op):
+    binding = db.get(OperationPolicy, op.id)
+    preview = (
+        json.loads(binding.preview)
+        if binding
+        else (slot_details(db, op.slot_id, op.project_id) if op.slot_id else None)
+    )
+    policy_text = "Local demo: cancel or reschedule before the appointment starts. Preview does not reserve a slot."
+    if binding:
+        cutoff = preview["policy"]["cancellation_cutoff_minutes"]
+        policy_text = f"Cancel or reschedule at least {cutoff} minutes before the appointment. Preview does not reserve capacity."
     return {
         "id": op.id,
         "kind": op.kind,
@@ -53,8 +87,8 @@ def receipt(db, op):
         "booking_id": op.booking_id,
         "expires_at": op.expires_at,
         "error": op.error,
-        "preview": slot_details(db, op.slot_id, op.project_id) if op.slot_id else None,
-        "policy": "Local demo: cancel or reschedule before the appointment starts. Preview does not reserve a slot.",
+        "preview": preview,
+        "policy": policy_text,
         "notification": "In-app only; no email or SMS sent.",
     }
 
@@ -93,19 +127,25 @@ def available_slots(service_id: str, scope=Depends(project_scope), db=Depends(da
     )
     if not service:
         raise HTTPException(404, "SERVICE_NOT_FOUND")
+    service_config = db.get(ServicePolicy, service.id)
+    lead = json.loads(service_config.configuration)["lead_time_minutes"] if service_config else 60
+    window = (
+        json.loads(service_config.configuration)["booking_window_days"] if service_config else 180
+    )
     slots = db.scalars(
         select(Slot)
         .where(
             Slot.service_id == service_id,
-            Slot.start_at > int(time.time()) + 3600,
+            Slot.start_at > int(time.time()) + lead * 60,
+            Slot.start_at <= int(time.time()) + window * 86400,
             ~Slot.id.in_(select(Reservation.slot_id)),
         )
         .order_by(Slot.start_at)
         .limit(100)
     )
     return {
-        "items": [slot_details(db, s.id, scope[0].id) for s in slots],
-        "lead_time_minutes": 60,
+        "items": [slot_details(db, s.id, scope[0].id) for s in slots if eligible(db, s)],
+        "lead_time_minutes": lead,
         "capacity_per_slot": 1,
     }
 
@@ -159,7 +199,8 @@ def propose(
         if booking.status != "confirmed":
             raise HTTPException(409, "BOOKING_NOT_ACTIVE")
         old_slot = db.get(Slot, booking.slot_id)
-        if old_slot.start_at <= time.time():
+        _, old_policy = service_policy(db, old_slot)
+        if old_slot.start_at <= time.time() + old_policy.cancellation_cutoff_minutes * 60:
             raise HTTPException(409, "CHANGE_CUTOFF_PASSED")
     elif body.booking_id:
         raise HTTPException(422, "BOOK_DOES_NOT_ACCEPT_BOOKING_ID")
@@ -167,7 +208,8 @@ def propose(
     slot_details(db, slot_id, scope[0].id)
     if body.kind != "cancel":
         slot = db.get(Slot, slot_id)
-        if slot.start_at <= time.time() + 3600:
+        configured, policy = service_policy(db, slot)
+        if slot.start_at <= time.time() + (policy.lead_time_minutes * 60 if configured else 3600):
             raise HTTPException(409, "LEAD_TIME_REQUIRED")
         if db.get(Reservation, slot_id):
             raise HTTPException(409, "SLOT_UNAVAILABLE")
@@ -182,6 +224,16 @@ def propose(
     )
     db.add(op)
     try:
+        db.flush()
+        bind_operation(db, op, slot_details(db, slot_id, scope[0].id))
+        db.add(
+            AuditEvent(
+                project_id=scope[0].id,
+                actor_id=session.user_id,
+                kind="operation_proposed",
+                object_id=op.id,
+            )
+        )
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -236,7 +288,8 @@ def confirm(
         return receipt(db, db.get(Operation, operation_id))
     try:
         slot = db.get(Slot, op.slot_id)
-        if slot.start_at <= time.time() + (3600 if op.kind != "cancel" else 0):
+        revalidate_operation(db, op, slot)
+        if slot.start_at <= time.time():
             raise ValueError("APPOINTMENT_TIME_UNAVAILABLE")
         if op.kind == "book":
             booking = Booking(project_id=op.project_id, user_id=session.user_id, slot_id=slot.id)
@@ -244,12 +297,14 @@ def confirm(
             db.flush()
             db.add(Reservation(slot_id=slot.id, booking_id=booking.id))
             db.flush()  # Atomic unique constraint decides competing last-slot claims.
+            reserve_resource(db, booking, slot)
             op.booking_id = booking.id
         else:
             booking = own_booking(db, op.booking_id, op.project_id, session.user_id)
             old_slot_id = booking.slot_id
             old_slot = db.get(Slot, old_slot_id)
-            if old_slot.start_at <= time.time():
+            _, old_policy = service_policy(db, old_slot)
+            if old_slot.start_at <= time.time() + old_policy.cancellation_cutoff_minutes * 60:
                 raise ValueError("CHANGE_CUTOFF_PASSED")
             updated = db.execute(
                 update(Booking)
@@ -268,8 +323,12 @@ def confirm(
             if op.kind == "reschedule":
                 db.add(Reservation(slot_id=slot.id, booking_id=booking.id))
                 db.flush()
+                reserve_resource(db, booking, slot)
                 booking.slot_id = slot.id
             else:
+                db.execute(
+                    delete(ResourceReservation).where(ResourceReservation.booking_id == booking.id)
+                )
                 booking.status = "cancelled"
             db.execute(
                 update(Reminder)
@@ -285,6 +344,14 @@ def confirm(
                 )
             )
         op.state = "succeeded"
+        db.add(
+            AuditEvent(
+                project_id=scope[0].id,
+                actor_id=session.user_id,
+                kind="operation_succeeded",
+                object_id=op.id,
+            )
+        )
         db.commit()
     except (IntegrityError, ValueError) as exc:
         db.rollback()
@@ -292,6 +359,14 @@ def confirm(
         if op.state == "awaiting_confirmation":
             op.state = "failed"
             op.error = "SLOT_UNAVAILABLE" if isinstance(exc, IntegrityError) else str(exc)
+            db.add(
+                AuditEvent(
+                    project_id=scope[0].id,
+                    actor_id=session.user_id,
+                    kind="operation_failed",
+                    object_id=op.id,
+                )
+            )
             db.commit()
     return receipt(db, op)
 
@@ -325,31 +400,6 @@ def inbox(scope=Depends(project_scope), session=Depends(identity), db=Depends(da
 
 @router.get("/tools")
 def tools(scope=Depends(project_scope)):
-    return {
-        "items": [
-            {"name": "list_services", "version": 1, "kind": "read", "status": "implemented"},
-            {"name": "get_available_slots", "version": 1, "kind": "read", "status": "implemented"},
-            {
-                "name": "create_appointment",
-                "version": 1,
-                "kind": "write",
-                "confirmation": "required",
-                "status": "implemented-local",
-            },
-            {
-                "name": "reschedule_appointment",
-                "version": 1,
-                "kind": "write",
-                "confirmation": "required",
-                "status": "implemented-local",
-            },
-            {
-                "name": "cancel_appointment",
-                "version": 1,
-                "kind": "write",
-                "confirmation": "required",
-                "status": "implemented-local",
-            },
-            {"name": "send_email", "kind": "write", "status": "unconfigured"},
-        ]
-    }
+    from .registry import descriptors
+
+    return {"items": descriptors()}

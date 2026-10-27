@@ -323,3 +323,111 @@ def test_invitation_one_time_membership_removal_and_credential_rotation(setup):
         == 204
     )
     assert client.get("/v1/me", headers=h).status_code == 401
+
+
+def test_tool_registry_contracts_do_not_execute_writes_or_unconfigured_http(setup):
+    client, app = setup
+    booking_seed(app)
+    h = auth(client)
+    root = "/v1/projects/cedar"
+    contracts = client.get(root + "/tools", headers=h).json()["items"]
+    assert (
+        next(c for c in contracts if c["name"] == "create_appointment")["input_schema"][
+            "additionalProperties"
+        ]
+        is False
+    )
+    assert client.post(
+        root + "/tool-calls", headers=h, json={"name": "list_services", "arguments": {}}
+    ).json()["result"]["items"]
+    proposed = client.post(
+        root + "/tool-calls",
+        headers=h,
+        json={
+            "name": "create_appointment",
+            "arguments": {"slot_id": "slot-0"},
+            "idempotency_key": "tool-write-1",
+        },
+    )
+    assert proposed.status_code == 200 and proposed.json()["execution"] == "proposal-only"
+    with app.state.sessions() as db:
+        assert not db.scalars(select(Booking)).all()
+    assert (
+        client.post(
+            root + "/tool-calls",
+            headers=h,
+            json={"name": "list_services", "arguments": {"sql": "DROP TABLE users"}},
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            root + "/tool-calls",
+            headers=h,
+            json={"name": "http_request", "arguments": {"url": "http://169.254.169.254"}},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            root + "/tool-calls", headers=h, json={"name": "send_email", "arguments": {}}
+        ).status_code
+        == 503
+    )
+
+
+def test_organization_onboarding_creates_an_isolated_owner_workspace(setup):
+    client, _ = setup
+    h = auth(client)
+    created = client.post("/v1/organizations", headers=h, json={"name": "New business"})
+    assert created.status_code == 201
+    project = created.json()["project_id"]
+    listings = client.get("/v1/projects", headers=h).json()["items"]
+    assert next(p for p in listings if p["id"] == project)["role"] == "owner"
+    assert (
+        client.post(
+            f"/v1/projects/{project}/assistants", headers=h, json={"name": "New business assistant"}
+        ).status_code
+        == 201
+    )
+    assert (
+        client.get(f"/v1/projects/{project}/assistants", headers=auth(client, "harbor")).status_code
+        == 404
+    )
+
+
+def test_chat_actions_collect_details_and_require_authoritative_confirmation(setup):
+    from platform_api.database import ChatAction
+
+    client, app = setup
+    booking_seed(app)
+    h, other = auth(client), auth(client, "second")
+    assistant = bot_id(client, h)
+    bot = f"/v1/assistants/{assistant}"
+    response = client.post(bot + "/chat", headers=h, json={"text": "Book an appointment"})
+    assert response.status_code == 200 and response.json()["mode"] == "action_form"
+    card = response.json()["action"]
+    root = "/v1/projects/cedar"
+    action = root + "/chat-actions/" + card["id"]
+    assert client.get(action, headers=other).status_code == 404
+    with app.state.sessions() as db:
+        assert not db.scalars(select(Booking)).all()
+    proposed = client.post(action + "/propose", headers=h, json={"slot_id": "slot-0"})
+    assert proposed.status_code == 200 and proposed.json()["state"] == "awaiting_confirmation"
+    assert (
+        client.post(action + "/propose", headers=h, json={"slot_id": "slot-1"}).status_code == 409
+    )
+    op = proposed.json()
+    confirmed = client.post(root + f"/operations/{op['id']}/confirm", headers=h).json()
+    assert confirmed["state"] == "succeeded"
+    assert (
+        client.post(action + "/propose", headers=h, json={"slot_id": "slot-0"}).json()["booking_id"]
+        == confirmed["booking_id"]
+    )
+    conversation = response.json()["conversation_id"]
+    transcript = client.get(bot + "/conversations/" + conversation, headers=h).json()["items"]
+    assert next(m for m in transcript if m.get("action"))["action"]["id"] == card["id"]
+    assert client.delete(bot + "/conversations/" + conversation, headers=h).status_code == 204
+    with app.state.sessions() as db:
+        assert not db.scalars(select(ChatAction)).all()
+        assert len(db.scalars(select(Booking)).all()) == 1

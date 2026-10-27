@@ -8,9 +8,19 @@ import subprocess
 import sys
 import time
 
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import and_, delete, or_, select, update
 
-from .database import Chunk, Document, Embedding, Job, Reminder, connect
+from .database import (
+    Chunk,
+    Document,
+    Embedding,
+    Invitation,
+    Job,
+    Reminder,
+    Session,
+    UserMemory,
+    connect,
+)
 from .inference import ProviderUnavailable, embed_texts
 
 
@@ -18,6 +28,8 @@ def run_once(sessions):
     now = int(time.time())
     token = secrets.token_hex(16)
     with sessions.begin() as db:
+        for model in (UserMemory, Invitation, Session):
+            db.execute(delete(model).where(model.expires_at <= now))
         exhausted = list(
             db.scalars(
                 select(Job).where(Job.state == "running", Job.lease_until < now, Job.attempts >= 3)

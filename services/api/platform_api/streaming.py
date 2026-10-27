@@ -7,7 +7,7 @@ import time
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from .database import Membership, Message, Session, SupportTicket
+from .database import Conversation, Membership, Message, Session, SupportTicket
 from .inference import ProviderUnavailable, stream_completion
 
 
@@ -44,6 +44,14 @@ def chat_stream(request, assistant, session, conversation_id, question, evidence
                     or not db.get(Membership, (user_id, project.organization_id))
                 ):
                     yield event("error", {"code": "SESSION_OR_ACCESS_REVOKED"})
+                    return
+                conversation = db.get(Conversation, conversation_id)
+                if (
+                    not conversation
+                    or conversation.user_id != user_id
+                    or conversation.assistant_id != assistant_id
+                ):
+                    yield event("error", {"code": "CONVERSATION_REMOVED"})
                     return
                 active = citations(db, [e["chunk_id"] for e in evidence], assistant_id)
                 handoff = db.scalar(

@@ -60,7 +60,7 @@ class OllamaProvider:
                         "model": self.model,
                         "stream": False,
                         "messages": [{"role": "user", "content": prompt}],
-                        "options": {"num_predict": 256, "num_ctx": 2048},
+                        "options": {"num_predict": 256, "num_ctx": 4096},
                     },
                 )
                 response.raise_for_status()
@@ -116,7 +116,7 @@ async def stream_completion(provider: OllamaProvider, prompt: str):
                         "model": provider.model,
                         "stream": True,
                         "messages": [{"role": "user", "content": prompt}],
-                        "options": {"num_predict": 256, "num_ctx": 2048},
+                        "options": {"num_predict": 256, "num_ctx": 4096},
                     },
                 ) as response:
                     response.raise_for_status()

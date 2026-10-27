@@ -198,3 +198,19 @@ def test_citation_numbering_preserves_retrieval_order(setup):
     assert [c["chunk_id"] for c in result["citations"]] == [c["chunk_id"] for c in expected]
     for index, chunk in enumerate(result["citations"], 1):
         assert f"[{index}] {chunk['text']}" in result["text"]
+
+
+def test_short_follow_up_uses_owned_conversation_context(setup):
+    client, app = setup
+    h = auth(client)
+    assistant = bot_id(client, h)
+    upload_ready(client, app, h, assistant, "Bicycle service costs thirty credits.")
+    root = f"/v1/assistants/{assistant}"
+    first = client.post(root + "/chat", headers=h, json={"text": "Bicycle service"}).json()
+    follow_up = client.post(
+        root + "/chat",
+        headers=h,
+        json={"text": "How much is it?", "conversation_id": first["conversation_id"]},
+    ).json()
+    assert "thirty credits" in follow_up["text"] and follow_up["citations"]
+    assert follow_up["conversation_id"] == first["conversation_id"]

@@ -66,6 +66,19 @@ export function useStudio() {
       setBusy(false);
     }
   }
+  async function createOrganization() {
+    const name = prompt("New organisation name");
+    if (!name?.trim()) return;
+    await action(async () => {
+      const result = await client.request<{ project_id: string }>(
+        "/v1/organizations",
+        { method: "POST", body: JSON.stringify({ name }) },
+      );
+      const list = await client.request<{ items: Project[] }>("/v1/projects");
+      setProjects(list.items);
+      setProject(result.project_id);
+    });
+  }
   async function refreshBranding() {
     if (!assistant) return;
     const configuration = await client.request<{
@@ -76,6 +89,11 @@ export function useStudio() {
       api("/assistants"),
     );
     setAssistants(bots.items);
+  }
+  async function refreshServices() {
+    setServices(
+      (await client.request<{ items: Service[] }>(api("/services"))).items,
+    );
   }
   async function refreshBookings() {
     setBookings(
@@ -229,6 +247,7 @@ export function useStudio() {
                         role: "assistant",
                         text: result.text,
                         citations: result.citations,
+                        action: result.action,
                         mode: result.mode,
                       }
                     : item,
@@ -261,6 +280,7 @@ export function useStudio() {
             role: "assistant",
             text: r.text,
             citations: r.citations,
+            action: r.action,
             mode: r.mode,
           },
         ]);
@@ -322,6 +342,7 @@ export function useStudio() {
     });
   }
   return {
+    createOrganization,
     branding,
     refreshBranding,
     retrieval,
@@ -385,6 +406,7 @@ export function useStudio() {
     api,
     bot,
     action,
+    refreshServices,
     refreshBookings,
     refreshDocs,
     login,

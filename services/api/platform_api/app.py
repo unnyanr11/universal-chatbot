@@ -147,14 +147,25 @@ def create_app(database_url=None, provider=None):
 
     @app.get("/v1/projects")
     def projects(session=Depends(identity), db=Depends(database)):
-        rows = db.scalars(
-            select(Project)
+        rows = db.execute(
+            select(Project, Membership.role)
             .join(Membership, Membership.organization_id == Project.organization_id)
             .where(Membership.user_id == session.user_id)
             .order_by(Project.id)
             .limit(100)
         )
-        return {"items": [{"id": p.id, "name": p.name, "environment": p.environment} for p in rows]}
+        return {
+            "items": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "environment": p.environment,
+                    "organization_id": p.organization_id,
+                    "role": role,
+                }
+                for p, role in rows
+            ]
+        }
 
     @app.get("/v1/projects/{project_id}/assistants")
     def assistants(scope=Depends(project_scope), db=Depends(database)):
@@ -201,12 +212,18 @@ def create_app(database_url=None, provider=None):
             raise HTTPException(503, "LOCAL_INFERENCE_UNAVAILABLE") from None
 
     from .booking import router as booking_router
+    from .calendars import router as calendar_router
+    from .chat_actions import router as chat_action_router
     from .knowledge import router as knowledge_router
     from .management import router as management_router
+    from .registry import router as registry_router
     from .support import router as support_router
     from .team import router as team_router
     from .workflows import router as workflow_router
 
+    app.include_router(chat_action_router)
+    app.include_router(registry_router)
+    app.include_router(calendar_router)
     app.include_router(team_router)
     app.include_router(management_router)
     app.include_router(support_router)

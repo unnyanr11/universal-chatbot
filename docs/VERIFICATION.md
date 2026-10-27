@@ -1,22 +1,23 @@
 # Verification — 27 October 2026
 
-Observed locally for the knowledge/booking preview:
+## Observed baseline extension
 
-- Python 3.12 environment with pinned Python dependencies installed successfully.
-- React/TypeScript production build passed (`tsc --noEmit && vite build`), including the modular screens and typed HTTP client.
-- Python lint and formatting passed.
-- 15 backend tests passed locally after adding a citation-order regression. They exercise real SQLite writes for tenant boundaries, sessions, roles, ingestion/worker execution, actual PDF extraction, source removal/redaction, SSE final events, job lease recovery, booking ownership, duplicate confirmations, competing last-slot commits, expiring confirmations and rescheduling rollback.
-- Three synthetic lexical retrieval smoke cases passed. This is not model accuracy, multilingual validation or a portfolio performance benchmark.
-- Full live Uvicorn/worker HTTP journey passed: compiled UI/loader delivery, login, upload, real worker extraction, cited chat, service/slot lookup, booking, idempotent confirmation retry, cancellation and source deletion. This verifies HTTP integration, not browser rendering.
+GitHub run https://github.com/unnyanr11/universal-chatbot/actions/runs/40482903584 passed all three jobs:
 
-Adapter transport tests use a clearly labelled HTTP double and do not count as real AI inference. Booking integration tests use the actual local booking tables and constraints, not mocked booking success.
+- Python backend suite against SQLite and PostgreSQL 17, including tenant isolation, source deletion/redaction, publish/rollback pinning, tool boundaries, owned conversations, handoff privacy, workspace erasure, consent, membership/session controls, workflow dry-run/version/recovery and concurrent booking invariants.
+- React/TypeScript production build, reusable React component type check, Python lint/format and synthetic retrieval evaluation.
+- Four real Playwright browser journeys: sourced chat and booking/cancellation; authenticated iframe chat; configuration publication and workflow simulation; human handoff/private notes and customer workspace erasure.
+- Actual Ollama completion and token streaming for two local model configurations, all-minilm embeddings, worker indexing and semantic retrieval. These are real runtime calls, separate from test doubles.
+- Full Docker Compose build/start, compiled UI delivery and PostgreSQL seed using the built image.
 
-Browser acceptance passed in GitHub CI after fixing the service selector’s accessible name. Both Playwright journeys passed: upload → ingestion → cited chat/source preview → booking → cancellation → source deletion, and authentication/chat through the actual iframe loader. Run: https://github.com/unnyanr11/universal-chatbot/actions/runs/40477348625 . Local Chromium downloads still returned invalid archives, so browser execution used the CI runner. No screenshot or pixel-level visual QA claim is made.
+See BENCHMARKS.md for the exact observed smoke measurements and their limits.
 
-GitHub CI also passed the 14-test backend suite against PostgreSQL 17 in isolated per-test schemas, including real competing-slot transactions and rescheduling rollback: https://github.com/unnyanr11/universal-chatbot/actions/runs/40477657505 . The subsequent citation-order regression adds a fifteenth test.
+## Current calendar/tool hardening
 
-Not verified here: Docker build/Compose, actual Ollama model inference, target-user hardware latency, semantic retrieval, mobile integration, external delivery, security audit or complete transitive licence inventory. No adoption or business-impact metrics are claimed.
+The local suite additionally exercises shared staff capacity across different services, calendar-policy invalidation of pending approval, DST ambiguity rejection, schema-validated local tool calls, pre-parser/chunked request bounds and citation ordering. Its final source/test count and CI result will be recorded after the current commit is checked. Adding tests does not itself establish that they passed in every environment.
 
-Dependency audit: the initial Vite pin had a reported high-severity development-server vulnerability. It was updated to 7.3.7; the subsequent npm audit reported zero vulnerabilities in this locked dependency tree. This audit does not cover Python packages, model weights or application-level security.
+The frontend production build and source formatting are checked after each UI change. The authoring environment cannot run Chromium directly because downloaded archives were invalid; browser acceptance uses CI. The Expo example has no device/emulator acceptance and is not a shipped native app. No screenshot or pixel-level visual review claim is made.
 
-Known dependency warning: Starlette currently deprecates its httpx TestClient bridge in favour of httpx2. The pinned bridge still passes the suite; migrate before upgrading to a version that removes it.
+Dependency audit: Vite was upgraded to 7.3.7 after an initial high-severity development-server finding. Subsequent npm audit reported zero vulnerabilities in the locked JS dependency tree at that time. This does not cover Python packages, model weights or application logic. A broader security review, transitive licence inventory, model-answer quality study and production load testing remain outside these acceptance checks.
+
+Known dependency warning: the pinned Starlette TestClient bridge reports its httpx integration deprecated in favour of httpx2. The bridge still passes the suite; migrate it before an upgrade removes compatibility.

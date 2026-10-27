@@ -6,7 +6,14 @@ export interface Citation {
   page: number;
   text: string;
 }
+export interface ChatActionReference {
+  id: string;
+  kind: "book" | "reschedule" | "cancel";
+  project_id: string;
+  type: "appointment_form";
+}
 export interface ChatResult {
+  action?: ChatActionReference;
   conversation_id: string;
   text: string;
   citations: Citation[];

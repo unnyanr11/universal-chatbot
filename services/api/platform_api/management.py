@@ -18,13 +18,18 @@ from .database import (
     AssistantVersion,
     AuditEvent,
     Booking,
+    ChatAction,
     Conversation,
     Document,
     Membership,
     Message,
     Operation,
+    OperationPolicy,
+    Organization,
+    Project,
     Reminder,
     Reservation,
+    ResourceReservation,
     Session,
     SupportNote,
     SupportTicket,
@@ -414,10 +419,27 @@ def erase_my_data(
     tickets = select(SupportTicket.id).where(SupportTicket.conversation_id.in_(conversations))
     db.execute(delete(SupportNote).where(SupportNote.ticket_id.in_(tickets)))
     db.execute(delete(SupportTicket).where(SupportTicket.conversation_id.in_(conversations)))
+    db.execute(
+        delete(ChatAction).where(
+            ChatAction.message_id.in_(
+                select(Message.id).where(Message.conversation_id.in_(conversations))
+            )
+        )
+    )
     db.execute(delete(Message).where(Message.conversation_id.in_(conversations)))
     db.execute(delete(Conversation).where(Conversation.id.in_(conversations)))
     bookings = select(Booking.id).where(
         Booking.project_id == scope[0].id, Booking.user_id == session.user_id
+    )
+    db.execute(delete(ResourceReservation).where(ResourceReservation.booking_id.in_(bookings)))
+    db.execute(
+        delete(OperationPolicy).where(
+            OperationPolicy.operation_id.in_(
+                select(Operation.id).where(
+                    Operation.project_id == scope[0].id, Operation.user_id == session.user_id
+                )
+            )
+        )
     )
     db.execute(delete(Reservation).where(Reservation.booking_id.in_(bookings)))
     db.execute(delete(Reminder).where(Reminder.booking_id.in_(bookings)))
@@ -489,3 +511,22 @@ def audit_events(scope=Depends(project_scope), db=Depends(database)):
             )
         ]
     }
+
+
+class OrganisationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=100)
+
+
+@router.post("/organizations", status_code=201)
+def create_organization(body: OrganisationInput, session=Depends(identity), db=Depends(database)):
+    organization = Organization(name=body.name)
+    db.add(organization)
+    db.flush()
+    db.add(Membership(user_id=session.user_id, organization_id=organization.id, role="owner"))
+    project = Project(organization_id=organization.id, name=body.name + " workspace")
+    db.add(project)
+    db.flush()
+    audit(db, project.id, session.user_id, "organization_created", organization.id)
+    db.commit()
+    return {"organization_id": organization.id, "project_id": project.id}

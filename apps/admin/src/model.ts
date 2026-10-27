@@ -1,5 +1,15 @@
-import { AssistantClient, type Citation } from "../../../packages/js-sdk/index";
-export type Project = { id: string; name: string; environment: string };
+import {
+  AssistantClient,
+  type Citation,
+  type ChatActionReference,
+} from "../../../packages/js-sdk/index";
+export type Project = {
+  id: string;
+  name: string;
+  environment: string;
+  role?: string;
+  organization_id?: string;
+};
 export type Assistant = {
   id: string;
   name: string;
@@ -20,6 +30,7 @@ export type Service = {
   location: string;
 };
 export type Slot = {
+  staff?: string | null;
   slot_id: string;
   service: string;
   start_at: string;
@@ -39,8 +50,16 @@ export type Operation = {
   policy: string;
   notification: string;
 };
-export type Tool = { name: string; kind: string; status: string };
+export type Tool = {
+  name: string;
+  kind: string;
+  status: string;
+  description?: string;
+  input_schema?: Record<string, unknown>;
+  output_schema?: Record<string, unknown>;
+};
 export type ChatMessage = {
+  action?: ChatActionReference | null;
   provisional?: boolean;
   mode?: string;
   role: string;

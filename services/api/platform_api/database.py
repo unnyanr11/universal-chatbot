@@ -85,7 +85,7 @@ class Document(Base):
     assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), index=True)
     title: Mapped[str]
     content_hash: Mapped[str]
-    content: Mapped[bytes]
+    content: Mapped[bytes] = mapped_column(deferred=True)
     kind: Mapped[str]
     status: Mapped[str] = mapped_column(default="queued")
     error: Mapped[str] = mapped_column(default="")
@@ -303,3 +303,50 @@ class Invitation(Base):
     role: Mapped[str]
     expires_at: Mapped[int]
     consumed: Mapped[bool] = mapped_column(default=False)
+
+
+class Staff(Base):
+    __tablename__ = "staff"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    name: Mapped[str]
+
+
+class ServicePolicy(Base):
+    __tablename__ = "service_policies"
+    service_id: Mapped[str] = mapped_column(ForeignKey("services.id"), primary_key=True)
+    staff_id: Mapped[str] = mapped_column(ForeignKey("staff.id"))
+    configuration: Mapped[str]
+    revision: Mapped[int] = mapped_column(default=1)
+
+
+class SlotResource(Base):
+    __tablename__ = "slot_resources"
+    slot_id: Mapped[str] = mapped_column(ForeignKey("slots.id"), primary_key=True)
+    staff_id: Mapped[str] = mapped_column(ForeignKey("staff.id"), index=True)
+    policy_revision: Mapped[int]
+
+
+class ResourceReservation(Base):
+    __tablename__ = "resource_reservations"
+    booking_id: Mapped[str] = mapped_column(ForeignKey("bookings.id"), primary_key=True)
+    staff_id: Mapped[str] = mapped_column(ForeignKey("staff.id"), index=True)
+    start_at: Mapped[int]
+    end_at: Mapped[int]
+
+
+class OperationPolicy(Base):
+    __tablename__ = "operation_policies"
+    operation_id: Mapped[str] = mapped_column(ForeignKey("operations.id"), primary_key=True)
+    revision: Mapped[int]
+    preview: Mapped[str]
+
+
+class ChatAction(Base):
+    __tablename__ = "chat_actions"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    message_id: Mapped[str] = mapped_column(ForeignKey("messages.id"), unique=True)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    kind: Mapped[str]
+    operation_id: Mapped[str] = mapped_column(default="")

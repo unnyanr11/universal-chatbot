@@ -77,3 +77,37 @@ def test_semantic_boundary_reports_unconfigured_and_is_tenant_filtered(setup, mo
         ).status_code
         == 404
     )
+
+
+def test_only_owned_consented_preferences_enter_local_model_context(setup):
+    from test_booking import booking_seed
+
+    client, app = setup
+    booking_seed(app)
+    h, other = auth(client), auth(client, "second")
+    assistant = bot_id(client, h)
+    upload_ready(client, app, h, assistant, "Warranty lasts twelve months.")
+    client.post(
+        "/v1/projects/cedar/memories",
+        headers=h,
+        json={"text": "Prefer concise replies", "consent": True},
+    )
+    client.post(
+        "/v1/projects/cedar/memories",
+        headers=other,
+        json={"text": "OTHER_USER_PRIVATE_PREFERENCE", "consent": True},
+    )
+    captured = []
+
+    class ProviderDouble:
+        async def complete(self, prompt):
+            captured.append(prompt)
+            return "The warranty lasts twelve months [1]."
+
+    app.state.provider = ProviderDouble()
+    response = client.post(
+        f"/v1/assistants/{assistant}/chat", headers=h, json={"text": "warranty", "mode": "local"}
+    )
+    assert response.status_code == 200
+    assert "Prefer concise replies" in captured[0]
+    assert "OTHER_USER_PRIVATE_PREFERENCE" not in captured[0]

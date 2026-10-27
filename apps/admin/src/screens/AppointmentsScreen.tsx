@@ -106,6 +106,9 @@ export function AppointmentsScreen({ studio }: { studio: StudioState }) {
                   <strong>{operation.preview.service}</strong>
                   <p>{localTime(operation.preview)}</p>
                   <p>{operation.preview.location}</p>
+                  {operation.preview.staff && (
+                    <p>Staff: {operation.preview.staff}</p>
+                  )}
                 </>
               )}
               <p className="fine">{operation.policy}</p>

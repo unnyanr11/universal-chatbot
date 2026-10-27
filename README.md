@@ -1,18 +1,32 @@
 # Universal Chatbot · Assistant Studio
 
-A local-first assistant platform with a React administrative UI, approved-source search, evidence-based chat, an authenticated iframe widget and a real local appointment service. **Development preview: the full roadmap is not complete.** See [feature status](docs/STATUS.md) for exact boundaries.
+A self-hostable, local-first assistant platform with a React admin application, document-grounded chat, an authenticated website widget, transactional appointments, human support and durable local workflows. No paid AI API is required. This is a local platform release; optional provider and enterprise features have explicit boundaries in [STATUS.md](docs/STATUS.md).
 
-No paid AI API is required. Source-passage mode retrieves and quotes actual document passages without pretending to be generative AI. Optional local-model answers use Ollama and require installed, reviewed model weights.
+## Working capabilities
 
-## Quick start
+- Separate organisations/projects, assistants, roles, invitation links, expiring/revocable sessions and password rotation.
+- Versioned assistant branding/configuration, draft/publish/source manifests, import/export and rollback.
+- TXT/Markdown/CSV/DOCX/text-PDF ingestion with durable worker leases, bounded extraction and deletion/redaction.
+- Lexical search, optional local semantic/hybrid retrieval, cited passage answers and provisional Ollama token streaming.
+- Owned conversation history, short follow-up context, export/delete and server-created booking cards directly inside chat.
+- Services/staff, opening periods/breaks, holidays, buffers, lead times, windows, cancellation policy and DST-safe availability.
+- Explicit booking approval, atomic slot/staff capacity, idempotent receipts, cancellation and rescheduling rollback.
+- Human inbox, agent assignment/replies, private notes and paused automation during handoff.
+- Versioned visual workflow sequences, typed inputs, bounded branches, local tools, dry runs, checkpoints and recovery.
+- Tool contracts/sandbox, explicit-consent expiring preference records, workspace data export/erasure, audit and measured analytics.
+- Durable in-app reminders, typed JS/SSE client, reusable React component and a React Native source example.
 
-Requires Python 3.12 and Node.js 22.12+ or 24. Run from the repository root:
+Source-passage mode is a non-generative baseline: it quotes retrieved passages and does not pretend to be model inference. Generated text cannot create controls, manufacture tool results or execute actions.
+
+## Native setup
+
+Requires Python 3.12 and Node.js 22.12+ or 24. From the repository root:
 
 ```bash
 python -m venv .venv
 ```
 
-Activate with `.venv\Scripts\Activate.ps1` on Windows PowerShell, or `source .venv/bin/activate` on Linux/macOS. Then:
+Activate with `.venv\Scripts\Activate.ps1` in Windows PowerShell or `source .venv/bin/activate` on Linux/macOS:
 
 ```bash
 pip install -r requirements.txt
@@ -20,25 +34,19 @@ pip install --no-deps -e .
 python -m platform_api.migrate
 ```
 
-Set a unique seed password (at least 16 characters):
+Choose **one** initial account path:
 
-```powershell
-# Windows PowerShell
-$env:DEMO_PASSWORD = "replace-with-your-own-random-password"
-```
+- **Synthetic demo:** set `DEMO_PASSWORD` to a unique random password of at least 16 characters, then run `python -m platform_api.seed`. PowerShell: `$env:DEMO_PASSWORD = "your-unique-random-password"`; Bash: `export DEMO_PASSWORD='your-unique-random-password'`.
+- **Empty account database:** run `python -m platform_api.bootstrap` and enter the owner email, organisation and password interactively. No demo accounts are added. Bootstrap refuses a database that already contains users.
 
-```bash
-# Linux/macOS
-export DEMO_PASSWORD='replace-with-your-own-random-password'
-```
+Build the UI and start the application:
 
 ```bash
-python -m platform_api.seed
 cd apps/admin
 npm ci
 npm run build
 cd ../..
-uvicorn platform_api.app:create_app --factory --host 127.0.0.1 --port 8000
+uvicorn platform_api.app:create_app --factory --host 127.0.0.1 --port 8000 --limit-concurrency 64
 ```
 
 In a second activated terminal, from the repository root:
@@ -47,48 +55,50 @@ In a second activated terminal, from the repository root:
 python -m platform_api.worker
 ```
 
-Open **http://127.0.0.1:8000**. Sign in with `owner@cedar.example` or `owner@harbor.example` and your chosen seed password. No default password is embedded. The seed creates separate fictional businesses, draft assistants, services and non-overlapping slots for the next two weeks. Rerun it to refresh the window; existing accounts/passwords are preserved.
+Open **http://127.0.0.1:8000**. The demo has `owner@cedar.example`, `agent@cedar.example`, `customer@cedar.example` and corresponding `harbor.example` accounts, using your chosen demo password. They are fictional businesses with separate data. The seed also creates draft assistants, services and fixed slots for the next two weeks; rerun it to refresh the window without changing existing passwords.
 
-For frontend development use `npm run dev` in `apps/admin` while API and worker run; Vite proxies `/v1` to port 8000. Production-built assets are served by FastAPI from one origin. Without a frontend build, the API remains available and `/` reports `FRONTEND_NOT_BUILT`.
-
-## Try the working journey
-
-1. **Knowledge:** upload a UTF-8 TXT/Markdown/CSV, DOCX or text PDF (2 MB limit). The durable worker extracts and indexes passages. Observe queued → ready or a visible failure.
-2. **Chat:** ask a question matching the source. Source-passage mode returns retrieved passages and live citations. An unrelated question returns insufficient information. Optional local model mode fails clearly if Ollama is unavailable.
-3. Select a citation to inspect its passage. **Retrieval debugger** shows lexical ranking scores, not confidence percentages.
-4. **Appointments:** select a service and slot, inspect the exact date/time/timezone and policy, then confirm. The booking is a durable database write, not a simulated result.
-5. Reschedule or cancel through a new explicit confirmation. Losing a replacement slot preserves the original booking. Repeated confirmation cannot create duplicate bookings.
-6. **Integrate:** copy the iframe loader snippet, or open `/demo-embed.html` and supply the assistant ID. This is an authenticated preview: users sign in inside the frame. A dedicated widget origin is recommended for embedding in another application.
-7. Remove a source. Future retrieval/citations reject it and stored answers citing it are redacted. Already-downloaded browser content and backups cannot be recalled.
-
-## Local inference
-
-Install Ollama separately and review the licence/hardware needs of a suitable model. No model is silently selected or downloaded. Configure the exact full model tag returned by Ollama:
-
-```bash
-# Export these variables using the syntax for your shell.
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=your-reviewed-model:tag
-```
-
-Restart the API and choose Local model in Chat. `python -m platform_api.doctor` reports hardware/tool availability. The adapter has one active completion per API process, a 65-second total deadline and bounded context/output. Local-model answers can still be incorrect; citations are references to retrieved evidence, not proof of factual correctness. Lexical retrieval is the implemented baseline; embeddings/hybrid search and true token streaming remain pending.
+For development, `npm run dev` in `apps/admin` proxies `/v1` to the API. Production-built assets are served from the API origin. Without a build, `/` reports `FRONTEND_NOT_BUILT` while API documentation remains at `/docs`.
 
 ## Docker Compose
 
-Docker is unavailable in the build environment, so this path is **provided but unverified**.
+The Compose build/start path passed in GitHub CI; see [verification](docs/VERIFICATION.md).
 
 ```bash
 cp .env.example .env
-# Set POSTGRES_PASSWORD to a unique URL-safe random value in .env.
+# Set POSTGRES_PASSWORD in .env to a unique URL-safe random value.
 docker compose up --build -d
 docker compose run --rm -e DEMO_PASSWORD='your-unique-long-password' api python -m platform_api.seed
 ```
 
-The multi-stage build compiles React and packages the Python API. Compose runs PostgreSQL, a one-shot migration, API, durable worker and Ollama. Only the application port is bound to loopback; raw inference/database ports are not exposed. Install model weights explicitly with `docker compose exec ollama ollama pull <reviewed-tag>` if needed.
+Alternatively bootstrap an empty database with `docker compose run --rm api python -m platform_api.bootstrap`. Compose runs PostgreSQL, migration, API, worker and Ollama. Only the application port is published to loopback; raw model and database ports are private. Native commands require exported shell variables; `.env` is automatically read by Compose only.
 
-`.env` is read automatically by Compose. Native commands require environment variables exported in the shell; there is no implicit dotenv loader.
+## Enable local models
 
-## Checks
+Models are optional and downloaded separately after hardware/licence review. The verified CPU smoke profile uses Apache-2.0 SmolLM2 configurations and all-minilm:
+
+```bash
+ollama pull smollm2:360m
+ollama pull all-minilm:latest
+```
+
+Export `OLLAMA_MODEL=smollm2:360m` and `OLLAMA_EMBED_MODEL=all-minilm:latest` in both API and worker environments, then restart them. In Compose, set those entries in `.env`, pull weights with `docker compose exec ollama ollama pull <model-tag>`, then recreate API/worker services.
+
+Choose Local model and semantic/hybrid retrieval in Chat. Embeddings apply to subsequent uploads; existing files must be re-uploaded after enabling them. Semantic indexing is bounded at 64 chunks/document, with a visible lexical-only warning above that budget. No index is reported ready when embeddings are unconfigured. `python -m platform_api.doctor` reports configuration/hardware availability.
+
+The adapter limits active completions to one per API process, with 4,096 context tokens, 256 output tokens and a 65-second total deadline. Small smoke models prove runtime operation, not business-answer quality. [BENCHMARKS.md](docs/BENCHMARKS.md) records actual observations and hardware; they are not minimum requirements or public-throughput promises.
+
+## Reproducible walkthrough
+
+1. **Knowledge:** upload approved information and watch queued → ready/failed with the worker running. Ask a sourced question, inspect its citation and compare retrieval methods in the debugger.
+2. **Settings:** save a draft and publish it. New sources stay outside the published manifest until republished. Restore a prior version; deleted sources do not reappear.
+3. **Chat:** type “Book an appointment.” Choose an exact service/date/time in the server-created card, review its policy and explicitly confirm. Refreshing/replaying the card cannot create another booking. Cancellation/rescheduling also require confirmation.
+4. **Calendars:** create staff and a managed service, edit policy and generate dates. Shared staff cannot be booked concurrently across services. Policy changes invalidate pending approvals; regenerate future availability afterward. Legacy demo slots remain a separate fixed-slot profile.
+5. **Support:** request human help from Chat. In another session, an owner/agent claims the ticket, adds a private note and sends a human reply. Customer “Refresh replies” never exposes the private note. Return the ticket to the assistant to resume automation.
+6. **Workflows:** save the provided booking template, run a labelled dry run, then a live version. Live runs stop at an exact approval preview. Saved runs remain pinned to their definition and resume after interruption.
+7. **Privacy:** inspect/forget explicit preferences, view delivered in-app reminders, export owned data or erase workspace activity. Accounts/shared knowledge/backups remain; the UI states those limits.
+8. **Integrate:** copy the iframe loader or use `/demo-embed.html`. External host names must be allowed in Settings; frame policies supplement authentication. The widget still requires login.
+
+## Verification
 
 ```bash
 ruff check .
@@ -99,29 +109,19 @@ python -m pip check
 cd apps/admin
 npm run build
 npm run format:check
+npx tsc -p ../../packages/react-sdk/tsconfig.json
 npx playwright install chromium
 npm run test:e2e
 ```
 
-The browser tests start an isolated synthetic API and worker. Do not run them while another server occupies port 8000. CI runs backend tests, frontend type/build checks and real-browser journeys. See [verification](docs/VERIFICATION.md) for actual observed results; tests that could not run are not marked passed.
+Browser tests start an isolated synthetic API/worker; stop any server occupying port 8000 first. CI also runs the backend suite on PostgreSQL, real local model/embedding smoke checks and the Compose stack. Consult [VERIFICATION.md](docs/VERIFICATION.md) for observed runs rather than assuming a newly added check passed.
 
-## Repository map
+## Documentation
 
-- `services/api/platform_api`: API, policies, schema, worker and inference adapter.
-- `apps/admin/src/screens`: React screens; `useStudio.ts`: state/network coordination.
-- `apps/admin/public`: versioned preview widget loader and embed demonstration.
-- `packages/js-sdk`: small typed HTTP client with abort support.
-- `tests`: policy, ingestion, deletion, database concurrency and booking tests.
-- `evaluation`: reproducible synthetic lexical baseline smoke cases.
-- `infra`, `compose.yaml`, `.github/workflows`: startup/build/CI configuration.
-- `docs`: architecture, threat model, retention, operations and feature ledger.
+- [Architecture and boundaries](docs/ARCHITECTURE.md)
+- [Security, privacy and retention](docs/SECURITY.md)
+- [Operations and backup/restore](docs/OPERATIONS.md)
+- [Client integrations](docs/CLIENTS.md)
+- [Feature status](docs/STATUS.md)
 
-This preview is for synthetic local development. Public deployment, guest access, signed host identity, full model evaluation, staff/calendar administration, workflow automation, human support and external integrations require additional milestones. No real messages, payments or external appointments are sent.
-
-## Platform controls added in the current extension
-
-Studio now includes Settings (draft/publish/rollback/source manifests), Support (human inbox/private notes), Workflows (bounded visual sequence editor and durable runs), Privacy (explicit preferences, data export/deletion, all-session logout) and Analytics (measured counts/audit events). Chat supports owned history, refresh/export, handoff and provisional local-model token streaming. Run migrations before starting an updated checkout.
-
-Set `OLLAMA_EMBED_MODEL=all-minilm:latest` in the API and worker environments to enable local embeddings on subsequent uploads. Select semantic or hybrid search in Chat or the retrieval debugger. Existing documents require re-upload after enabling embeddings. Semantic indexing is currently limited to 64 chunks per document, with a visible lexical-only warning above that budget. The 46 MB model is Apache-2.0; the exact model tag and runtime still need installation.
-
-Workflow nodes are deliberately allowlisted: collect, validate, forward branch, retrieve knowledge, list services/slots, propose a local booking, ask confirmation and end. No arbitrary code/HTTP nodes exist. The visual editor saves schema-validated immutable versions. Runs remain user-owned and pinned to their starting version; dry runs never create booking operations. External notifications, OAuth providers and arbitrary imported APIs remain unavailable.
+No external email, SMS, commerce, payment, calendar or arbitrary HTTP connector is silently enabled. Those adapters require reviewed implementation and, where applicable, credentials. Voice, Flutter and enterprise SSO are optional future capabilities. The mobile source example still needs device/emulator acceptance. No production security certification, unlimited free inference, invented accuracy or business impact is claimed.

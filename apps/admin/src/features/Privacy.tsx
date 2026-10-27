@@ -2,7 +2,15 @@ import { useState } from "react";
 import { client } from "../model";
 import { ErrorNotice, downloadJson, useResource, useTask } from "./shared";
 type Memory = { id: string; text: string; expires_at: number; source: string };
-export function Privacy({ project }: { project: string }) {
+export function Privacy({
+  project,
+  onErased,
+}: {
+  project: string;
+  onErased?: () => void;
+}) {
+  const [currentPassword, setCurrentPassword] = useState(""),
+    [newPassword, setNewPassword] = useState("");
   const root = `/v1/projects/${project}`;
   const [tick, setTick] = useState(0),
     [text, setText] = useState(""),
@@ -28,8 +36,9 @@ export function Privacy({ project }: { project: string }) {
         <p className="muted">
           Only preferences you explicitly submit are stored. They expire after
           30 days. Never include passwords, payment data or sensitive identity
-          information. Automatic use in generation is not enabled in this
-          release.
+          information. Local-model answers may use up to three active
+          preferences for tone and style. Preferences never grant permissions or
+          become factual evidence.
         </p>
         <ErrorNotice error={job.error || error} />
         <form
@@ -107,6 +116,54 @@ export function Privacy({ project }: { project: string }) {
             {n.timezone}
           </p>
         ))}
+      </section>
+      <section className="panel">
+        <h2>Change password</h2>
+        <p className="muted">
+          Changing your password signs out all sessions, including this one.
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void job.task(async () => {
+              await client.request("/v1/me/password", {
+                method: "POST",
+                body: JSON.stringify({
+                  current_password: currentPassword,
+                  new_password: newPassword,
+                }),
+              });
+              setCurrentPassword("");
+              setNewPassword("");
+              location.reload();
+            });
+          }}
+        >
+          <label>
+            Current password
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              maxLength={256}
+              required
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </label>
+          <label>
+            New password
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              minLength={16}
+              maxLength={256}
+              required
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </label>
+          <button disabled={job.busy}>Change password and sign out</button>
+        </form>
       </section>
       <section className="panel">
         <h2>Export and delete your workspace data</h2>

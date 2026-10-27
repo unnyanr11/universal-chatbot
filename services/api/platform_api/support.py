@@ -80,6 +80,35 @@ def request_handoff(
         select(SupportTicket).where(SupportTicket.conversation_id == conversation.id)
     )
     if ticket:
+        if ticket.state in {"resolved", "automated"}:
+            reopened = db.execute(
+                update(SupportTicket)
+                .where(
+                    SupportTicket.id == ticket.id,
+                    SupportTicket.version == ticket.version,
+                    SupportTicket.state.in_(["resolved", "automated"]),
+                )
+                .values(
+                    state="open",
+                    assigned_to="",
+                    subject=body.subject,
+                    version=SupportTicket.version + 1,
+                )
+                .returning(SupportTicket.id)
+            ).scalar_one_or_none()
+            if reopened:
+                db.add(
+                    AuditEvent(
+                        project_id=scope[0].id,
+                        actor_id=session.user_id,
+                        kind="handoff_reopened",
+                        object_id=ticket.id,
+                    )
+                )
+                db.commit()
+            else:
+                db.rollback()
+                ticket = db.get(SupportTicket, ticket.id)
         return ticket_record(ticket)
     ticket = SupportTicket(
         project_id=scope[0].id,

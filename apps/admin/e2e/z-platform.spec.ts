@@ -103,3 +103,60 @@ test("human handoff, private notes and workspace erasure remain separate", async
   ).not.toBeVisible();
   await customerContext.close();
 });
+
+test("staff calendar setup produces a bookable managed service", async ({
+  page,
+}) => {
+  await login(page);
+  await page.getByRole("button", { name: "Calendars", exact: true }).click();
+  await page.getByLabel("Staff name", { exact: true }).fill("Casey technician");
+  await page.getByRole("button", { name: "Add staff member" }).click();
+  await page
+    .getByLabel("Service name", { exact: true })
+    .fill("Managed consultation");
+  await page
+    .getByLabel("Assigned staff", { exact: true })
+    .selectOption({ label: "Casey technician" });
+  await page.getByRole("button", { name: "Create managed service" }).click();
+  await expect(page.getByLabel("Policy JSON", { exact: true })).toBeVisible();
+  const day = new Date(Date.now() + 86400000);
+  while ([0, 6].includes(day.getUTCDay())) day.setUTCDate(day.getUTCDate() + 1);
+  await page
+    .getByLabel("Start date", { exact: true })
+    .fill(day.toISOString().slice(0, 10));
+  await page.getByLabel("Days", { exact: true }).fill("1");
+  await page.getByRole("button", { name: "Generate availability" }).click();
+  await expect(page.getByRole("status")).toContainText(/Generated [1-9]/);
+  await page.getByRole("button", { name: "Appointments", exact: true }).click();
+  await page
+    .getByLabel("Service", { exact: true })
+    .selectOption({ label: "Managed consultation · 30 min" });
+  await page.locator(".slots button").first().click();
+  await expect(page.locator(".receipt")).toContainText("Casey technician");
+  await page
+    .getByRole("button", { name: "Confirm appointment", exact: true })
+    .click();
+  await expect(page.locator(".receipt .badge")).toHaveText("succeeded");
+});
+
+test("booking can be completed inside the chat with a server-owned action card", async ({
+  page,
+}) => {
+  await login(page);
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  await page.getByLabel("Message", { exact: true }).fill("Book an appointment");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  const card = page.getByRole("region", { name: "Appointment action" });
+  // A named section has an implicit region role and accepts no controls from model text.
+  await expect(card).toBeVisible();
+  await card
+    .getByLabel("Chat booking service", { exact: true })
+    .selectOption({ index: 1 });
+  await card.locator(".slot-choice").first().click();
+  await expect(card).toContainText("awaiting confirmation");
+  await card
+    .getByRole("button", { name: "Confirm appointment", exact: true })
+    .click();
+  await expect(card.locator(".badge")).toHaveText("succeeded");
+  await expect(card).toContainText("Reference:");
+});

@@ -1,0 +1,645 @@
+{
+  "date": "2026-10-27",
+  "notice": "Metadata inventory, not a legal review. UNKNOWN entries need review. Mobile example dependencies are not installed/locked in this project.",
+  "python": [
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "license_metadata": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ]
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "argon2-cffi",
+      "version": "25.1.0",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "argon2-cffi-bindings",
+      "version": "26.1.0",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23",
+      "license_metadata": "MPL-2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ]
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "license_metadata": "MIT-0",
+      "license_classifiers": []
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.162.0",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "license_metadata": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ]
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ]
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ]
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "license_metadata": "Apache-2.0",
+      "license_classifiers": []
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "license_metadata": "Apache-2.0 OR BSD-2-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "pillow",
+      "version": "13.0.0",
+      "license_metadata": "MIT-CMU",
+      "license_classifiers": []
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0",
+      "license_metadata": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ]
+    },
+    {
+      "name": "psycopg",
+      "version": "3.3.6",
+      "license_metadata": "LGPL-3.0-only",
+      "license_classifiers": []
+    },
+    {
+      "name": "psycopg-binary",
+      "version": "3.3.6",
+      "license_metadata": "LGPL-3.0-only",
+      "license_classifiers": []
+    },
+    {
+      "name": "pwdlib",
+      "version": "0.3.1",
+      "license_metadata": "UNKNOWN",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ]
+    },
+    {
+      "name": "pycparser",
+      "version": "3.12",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.1",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0",
+      "license_metadata": "BSD-2-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "pypdf",
+      "version": "6.21.2",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "license_metadata": "Apache-2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ]
+    },
+    {
+      "name": "reportlab",
+      "version": "5.1.0",
+      "license_metadata": "BSD license (see license.txt for details), Copyright (c) 2000-2025, ReportLab Inc.",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ]
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.3",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "SQLAlchemy",
+      "version": "2.1.6",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "starlette",
+      "version": "1.10.0",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "license_metadata": "MIT",
+      "license_classifiers": []
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "license_metadata": "PSF-2.0",
+      "license_classifiers": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "license_metadata": "BSD-3-Clause",
+      "license_classifiers": []
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.5",
+      "license_metadata": "Apache-2.0",
+      "license_classifiers": []
+    }
+  ],
+  "javascript": [
+    {
+      "path": "node_modules/@esbuild/aix-ppc64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/android-arm",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/android-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/android-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/darwin-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/darwin-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/freebsd-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/freebsd-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-arm",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-ia32",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-loong64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-mips64el",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-ppc64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-riscv64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-s390x",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/linux-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/netbsd-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/netbsd-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/openbsd-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/openbsd-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/openharmony-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/sunos-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/win32-arm64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/win32-ia32",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@esbuild/win32-x64",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@napi-rs/lzma-linux-x64-gnu",
+      "version": "1.5.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@playwright/test",
+      "version": "1.62.1",
+      "license_metadata": "Apache-2.0"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-android-arm-eabi",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-android-arm64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-darwin-arm64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-darwin-x64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-freebsd-arm64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-freebsd-x64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-arm-gnueabihf",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-arm-musleabihf",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-arm64-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-arm64-musl",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-loong64-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-loong64-musl",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-ppc64-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-ppc64-musl",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-riscv64-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-riscv64-musl",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-s390x-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-x64-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-linux-x64-musl",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-openbsd-x64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-openharmony-arm64",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-win32-arm64-msvc",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-win32-ia32-msvc",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-win32-x64-gnu",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@rollup/rollup-win32-x64-msvc",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@types/estree",
+      "version": "1.0.9",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@types/react",
+      "version": "19.2.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/@types/react-dom",
+      "version": "19.2.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/csstype",
+      "version": "3.2.3",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/esbuild",
+      "version": "0.28.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/fdir",
+      "version": "6.5.0",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/fsevents",
+      "version": "2.3.3",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/nanoid",
+      "version": "3.3.20",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/picocolors",
+      "version": "1.1.1",
+      "license_metadata": "ISC"
+    },
+    {
+      "path": "node_modules/picomatch",
+      "version": "4.0.7",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/playwright",
+      "version": "1.62.1",
+      "license_metadata": "Apache-2.0"
+    },
+    {
+      "path": "node_modules/playwright-core",
+      "version": "1.62.1",
+      "license_metadata": "Apache-2.0"
+    },
+    {
+      "path": "node_modules/playwright/node_modules/fsevents",
+      "version": "2.3.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/postcss",
+      "version": "8.5.32",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/prettier",
+      "version": "3.6.2",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/react",
+      "version": "19.2.0",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/react-dom",
+      "version": "19.2.0",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/rollup",
+      "version": "4.65.1",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/scheduler",
+      "version": "0.27.0",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/source-map-js",
+      "version": "1.2.2",
+      "license_metadata": "BSD-3-Clause"
+    },
+    {
+      "path": "node_modules/tinyglobby",
+      "version": "0.2.17",
+      "license_metadata": "MIT"
+    },
+    {
+      "path": "node_modules/typescript",
+      "version": "5.9.3",
+      "license_metadata": "Apache-2.0"
+    },
+    {
+      "path": "node_modules/vite",
+      "version": "7.3.7",
+      "license_metadata": "MIT"
+    }
+  ],
+  "model_weights": [
+    {
+      "tag": "smollm2:135m",
+      "license": "Apache-2.0",
+      "source": "https://ollama.com/library/smollm2:135m"
+    },
+    {
+      "tag": "smollm2:360m",
+      "license": "Apache-2.0",
+      "source": "https://ollama.com/library/smollm2:360m"
+    },
+    {
+      "tag": "all-minilm:latest",
+      "license": "Apache-2.0",
+      "source": "https://ollama.com/library/all-minilm:latest"
+    }
+  ]
+}

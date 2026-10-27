@@ -15,6 +15,7 @@ import { Support } from "./features/Support";
 import { Privacy } from "./features/Privacy";
 import { Analytics } from "./features/Analytics";
 import { Workflows } from "./features/Workflows";
+import { Calendars } from "./features/Calendars";
 import { Team, Join } from "./features/Team";
 function App() {
   const studio = useStudio();
@@ -39,6 +40,8 @@ function App() {
   } = studio;
   if (location.hash.startsWith("#invite=")) return <Join />;
   if (!token) return <LoginScreen studio={studio} />;
+  const role = projects.find((p) => p.id === project)?.role ?? "end_user";
+  const writer = ["owner", "administrator", "developer"].includes(role);
   const current = assistants.find((a) => a.id === assistant);
   return (
     <div
@@ -59,13 +62,18 @@ function App() {
             <select
               aria-label="Project"
               value={project}
-              onChange={(e) => setProject(e.target.value)}
+              onChange={(e) =>
+                e.target.value === "__new__"
+                  ? void studio.createOrganization()
+                  : setProject(e.target.value)
+              }
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
+              <option value="__new__">＋ New organisation</option>
             </select>
           </div>
           <nav>
@@ -82,21 +90,50 @@ function App() {
               "Privacy",
               "Analytics",
               "Team",
-            ].map((name, i) => (
-              <button
-                key={name}
-                className={tab === name ? "nav active" : "nav"}
-                onClick={() => {
-                  setTab(name);
-                  setError("");
-                }}
-              >
-                <span aria-hidden="true">
-                  {["◫", "▤", "◌", "▦", "⌘", "↗", "⚙", "☏", "⇢", "◇", "▥"][i]}
-                </span>
-                {name}
-              </button>
-            ))}
+              "Calendars",
+            ]
+              .filter((name) => {
+                if (
+                  [
+                    "Settings",
+                    "Calendars",
+                    "Workflows",
+                    "Tools",
+                    "Integrate",
+                    "Knowledge",
+                  ].includes(name)
+                )
+                  return writer;
+                if (name === "Team")
+                  return ["owner", "administrator"].includes(role);
+                if (name === "Analytics")
+                  return [
+                    "owner",
+                    "administrator",
+                    "analyst",
+                    "support_agent",
+                  ].includes(role);
+                return true;
+              })
+              .map((name, i) => (
+                <button
+                  key={name}
+                  className={tab === name ? "nav active" : "nav"}
+                  onClick={() => {
+                    setTab(name);
+                    setError("");
+                  }}
+                >
+                  <span aria-hidden="true">
+                    {
+                      ["◫", "▤", "◌", "▦", "⌘", "↗", "⚙", "☏", "⇢", "◇", "▥"][
+                        i
+                      ]
+                    }
+                  </span>
+                  {name}
+                </button>
+              ))}
           </nav>
           <div className="sidebar-bottom">
             <div className="provider">
@@ -206,12 +243,30 @@ function App() {
           <Workflows key={project} project={project} />
         )}
         {project && tab === "Privacy" && (
-          <Privacy key={project} project={project} />
+          <Privacy
+            key={project}
+            project={project}
+            onErased={() => {
+              studio.setMessages([]);
+              studio.setConversation(undefined);
+              studio.setBookings([]);
+              studio.setOperation(null);
+              studio.setSource(null);
+              studio.setResults([]);
+            }}
+          />
         )}
         {project && tab === "Analytics" && (
           <Analytics key={project} project={project} />
         )}
         {project && tab === "Team" && <Team key={project} project={project} />}
+        {project && tab === "Calendars" && (
+          <Calendars
+            key={project}
+            project={project}
+            onChanged={() => void studio.refreshServices()}
+          />
+        )}
         <footer>
           <span>◈ &nbsp; Assistant Studio</span>
           <span>Local first. Evidence always.</span>
