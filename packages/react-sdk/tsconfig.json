@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "react": ["../../apps/admin/node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": [
+        "../../apps/admin/node_modules/@types/react/jsx-runtime.d.ts"
+      ]
+    }
+  },
+  "include": ["*.tsx", "../js-sdk/*.ts"]
+}

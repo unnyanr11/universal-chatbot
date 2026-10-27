@@ -1,0 +1,9 @@
+{
+  "name": "@universal-assistant/react",
+  "private": true,
+  "version": "0.3.0",
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "exports": "./AssistantChat.tsx"
+}

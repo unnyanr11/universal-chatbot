@@ -42,6 +42,17 @@ def seed():
                         welcome_message="Welcome! Ask about our approved sources or browse appointments.",
                     )
                 )
+            for role, prefix in [("end_user", "customer"), ("support_agent", "agent")]:
+                account_email = f"{prefix}@{slug}.example"
+                if not db.scalar(select(User).where(User.email == account_email)):
+                    account = User(email=account_email, password_hash=passwords.hash(password))
+                    db.add(account)
+                    db.flush()
+                    db.add(
+                        Membership(
+                            user_id=account.id, organization_id=project.organization_id, role=role
+                        )
+                    )
             service = db.scalar(select(Service).where(Service.project_id == project.id))
             if not service:
                 service = Service(

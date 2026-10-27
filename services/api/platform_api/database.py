@@ -190,3 +190,116 @@ class Reminder(Base):
     version: Mapped[int]
     due_at: Mapped[int]
     status: Mapped[str] = mapped_column(default="scheduled")
+
+
+class AssistantVersion(Base):
+    __tablename__ = "assistant_versions"
+    __table_args__ = (UniqueConstraint("assistant_id", "number"),)
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), index=True)
+    number: Mapped[int]
+    configuration: Mapped[str]
+    published_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+
+
+class AssistantSettings(Base):
+    __tablename__ = "assistant_settings"
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), primary_key=True)
+    configuration: Mapped[str] = mapped_column(default="{}")
+    revision: Mapped[int] = mapped_column(default=1)
+    published_version: Mapped[int] = mapped_column(default=0)
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id"), unique=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    subject: Mapped[str]
+    state: Mapped[str] = mapped_column(default="open")
+    assigned_to: Mapped[str] = mapped_column(default="")
+    version: Mapped[int] = mapped_column(default=1)
+    created_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+
+
+class SupportNote(Base):
+    __tablename__ = "support_notes"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    author_id: Mapped[str]
+    text: Mapped[str]
+    created_at: Mapped[float] = mapped_column(default=time.time)
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    actor_id: Mapped[str]
+    kind: Mapped[str]
+    object_id: Mapped[str]
+    created_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+
+
+class UserMemory(Base):
+    __tablename__ = "user_memories"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    text: Mapped[str]
+    expires_at: Mapped[int]
+    created_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+
+
+class Workflow(Base):
+    __tablename__ = "workflows"
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    name: Mapped[str]
+    created_at: Mapped[int] = mapped_column(default=lambda: int(time.time()))
+
+
+class WorkflowVersion(Base):
+    __tablename__ = "workflow_versions"
+    __table_args__ = (UniqueConstraint("workflow_id", "number"),)
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    workflow_id: Mapped[str] = mapped_column(ForeignKey("workflows.id"), index=True)
+    number: Mapped[int]
+    definition: Mapped[str]
+
+
+class WorkflowRun(Base):
+    __tablename__ = "workflow_runs"
+    __table_args__ = (UniqueConstraint("project_id", "user_id", "idempotency_key"),)
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    workflow_version_id: Mapped[str] = mapped_column(ForeignKey("workflow_versions.id"))
+    idempotency_key: Mapped[str]
+    state: Mapped[str] = mapped_column(default="waiting")
+    cursor: Mapped[int] = mapped_column(default=0)
+    variables: Mapped[str] = mapped_column(default="{}")
+    trace: Mapped[str] = mapped_column(default="[]")
+    revision: Mapped[int] = mapped_column(default=1)
+    dry_run: Mapped[bool] = mapped_column(default=True)
+    lease_until: Mapped[int] = mapped_column(default=0)
+
+
+class Embedding(Base):
+    __tablename__ = "embeddings"
+    __table_args__ = (UniqueConstraint("chunk_id", "model"),)
+    id: Mapped[str] = mapped_column(primary_key=True, default=identifier)
+    chunk_id: Mapped[str] = mapped_column(ForeignKey("chunks.id"), index=True)
+    model: Mapped[str]
+    vector: Mapped[str]
+
+
+class Invitation(Base):
+    __tablename__ = "invitations"
+    digest: Mapped[str] = mapped_column(primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    email: Mapped[str]
+    role: Mapped[str]
+    expires_at: Mapped[int]
+    consumed: Mapped[bool] = mapped_column(default=False)

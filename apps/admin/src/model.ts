@@ -41,6 +41,8 @@ export type Operation = {
 };
 export type Tool = { name: string; kind: string; status: string };
 export type ChatMessage = {
+  provisional?: boolean;
+  mode?: string;
   role: string;
   text: string;
   citations?: Citation[];

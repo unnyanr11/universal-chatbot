@@ -27,6 +27,7 @@ class Input(BaseModel):
 
 
 class Login(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=1, max_length=256)
 
@@ -41,7 +42,10 @@ class Prompt(Input):
 
 
 def create_app(database_url=None, provider=None):
-    app = FastAPI(title="Universal Assistant Platform", version="0.2.0")
+    app = FastAPI(title="Universal Assistant Platform", version="0.3.0")
+    from .limits import RequestBodyLimit
+
+    app.add_middleware(RequestBodyLimit)
     engine, sessions = connect(
         database_url or os.getenv("DATABASE_URL", "sqlite:///./assistant.db")
     )
@@ -58,6 +62,29 @@ def create_app(database_url=None, provider=None):
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        if request.url.path in {"/", "/demo-embed.html"}:
+            ancestors = ["'self'"]
+            if request.query_params.get("widget") and request.query_params.get("assistant"):
+                import json
+
+                from .database import AssistantSettings
+
+                with sessions() as policy_db:
+                    settings = policy_db.get(AssistantSettings, request.query_params["assistant"])
+                    if settings:
+                        for domain in json.loads(settings.configuration).get("allowed_domains", []):
+                            scheme = (
+                                "http"
+                                if domain.split(":")[0] in {"localhost", "127.0.0.1"}
+                                else "https"
+                            )
+                            ancestors.append(f"{scheme}://{domain}")
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+                "connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; "
+                "frame-ancestors " + " ".join(ancestors)
+            )
         return response
 
     @app.exception_handler(HTTPException)
@@ -84,7 +111,7 @@ def create_app(database_url=None, provider=None):
 
     @app.get("/health")
     def health():
-        return {"status": "alive", "milestone": "knowledge-and-booking-preview"}
+        return {"status": "alive", "milestone": "local-platform-preview"}
 
     @app.post("/v1/sessions", status_code=201)
     def login(body: Login, db=Depends(database)):
@@ -103,7 +130,7 @@ def create_app(database_url=None, provider=None):
         db.commit()
         if count > 20:
             raise HTTPException(429, "LOGIN_RATE_LIMITED", headers={"Retry-After": "60"})
-        user = db.scalar(select(User).where(User.email == body.email.lower()))
+        user = db.scalar(select(User).where(User.email == body.email.strip().lower()))
         valid = passwords.verify(body.password, user.password_hash if user else dummy_hash)
         if not user or not valid:
             raise HTTPException(401, "INVALID_CREDENTIALS")
@@ -175,7 +202,15 @@ def create_app(database_url=None, provider=None):
 
     from .booking import router as booking_router
     from .knowledge import router as knowledge_router
+    from .management import router as management_router
+    from .support import router as support_router
+    from .team import router as team_router
+    from .workflows import router as workflow_router
 
+    app.include_router(team_router)
+    app.include_router(management_router)
+    app.include_router(support_router)
+    app.include_router(workflow_router)
     app.include_router(knowledge_router)
     app.include_router(booking_router)
     from pathlib import Path

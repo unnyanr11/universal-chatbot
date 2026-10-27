@@ -19,6 +19,8 @@ jobs:
         working-directory: apps/admin
       - run: npm run build
         working-directory: apps/admin
+      - run: npx tsc -p ../../packages/react-sdk/tsconfig.json
+        working-directory: apps/admin
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
@@ -56,3 +58,37 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install --no-deps -e .
       - run: pytest -q
+  local-model-and-compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OLLAMA_BASE_URL: http://127.0.0.1:11434
+      OLLAMA_EMBED_MODEL: all-minilm:latest
+      POSTGRES_PASSWORD: synthetic-ci-compose-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt && pip install --no-deps -e .
+      - run: docker run -d --name model-smoke -p 127.0.0.1:11434:11434 ollama/ollama:0.11.4
+      - run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags; then break; fi
+            sleep 1
+          done
+          docker exec model-smoke ollama pull smollm2:135m
+          docker exec model-smoke ollama pull smollm2:360m
+          docker exec model-smoke ollama pull all-minilm:latest
+      - run: python evaluation/local_model_smoke.py
+      - run: docker rm -f model-smoke
+      - run: docker compose up --build -d
+      - run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health; then break; fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8000/
+          docker compose run --rm -e DEMO_PASSWORD=synthetic-ci-seed-password api python -m platform_api.seed
+      - if: always()
+        run: docker compose logs --tail=60 && docker compose down -v

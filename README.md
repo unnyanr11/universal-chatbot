@@ -117,3 +117,11 @@ The browser tests start an isolated synthetic API and worker. Do not run them wh
 - `docs`: architecture, threat model, retention, operations and feature ledger.
 
 This preview is for synthetic local development. Public deployment, guest access, signed host identity, full model evaluation, staff/calendar administration, workflow automation, human support and external integrations require additional milestones. No real messages, payments or external appointments are sent.
+
+## Platform controls added in the current extension
+
+Studio now includes Settings (draft/publish/rollback/source manifests), Support (human inbox/private notes), Workflows (bounded visual sequence editor and durable runs), Privacy (explicit preferences, data export/deletion, all-session logout) and Analytics (measured counts/audit events). Chat supports owned history, refresh/export, handoff and provisional local-model token streaming. Run migrations before starting an updated checkout.
+
+Set `OLLAMA_EMBED_MODEL=all-minilm:latest` in the API and worker environments to enable local embeddings on subsequent uploads. Select semantic or hybrid search in Chat or the retrieval debugger. Existing documents require re-upload after enabling embeddings. Semantic indexing is currently limited to 64 chunks per document, with a visible lexical-only warning above that budget. The 46 MB model is Apache-2.0; the exact model tag and runtime still need installation.
+
+Workflow nodes are deliberately allowlisted: collect, validate, forward branch, retrieve knowledge, list services/slots, propose a local booking, ask confirmation and end. No arbitrary code/HTTP nodes exist. The visual editor saves schema-validated immutable versions. Runs remain user-owned and pinned to their starting version; dry runs never create booking operations. External notifications, OAuth providers and arbitrary imported APIs remain unavailable.

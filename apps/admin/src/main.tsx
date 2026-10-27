@@ -10,6 +10,12 @@ import { ChatScreen } from "./screens/ChatScreen";
 import { AppointmentsScreen } from "./screens/AppointmentsScreen";
 import { ToolsScreen } from "./screens/ToolsScreen";
 import { IntegrateScreen } from "./screens/IntegrateScreen";
+import { Settings } from "./features/Settings";
+import { Support } from "./features/Support";
+import { Privacy } from "./features/Privacy";
+import { Analytics } from "./features/Analytics";
+import { Workflows } from "./features/Workflows";
+import { Team, Join } from "./features/Team";
 function App() {
   const studio = useStudio();
   const {
@@ -31,10 +37,18 @@ function App() {
     api,
     action,
   } = studio;
+  if (location.hash.startsWith("#invite=")) return <Join />;
   if (!token) return <LoginScreen studio={studio} />;
   const current = assistants.find((a) => a.id === assistant);
   return (
-    <div className={widget ? "layout widget" : "layout"}>
+    <div
+      className={widget ? "layout widget" : "layout"}
+      style={
+        studio.branding
+          ? ({ "--green": studio.branding.color } as React.CSSProperties)
+          : undefined
+      }
+    >
       {!widget && (
         <aside className="sidebar">
           <div className="brand">
@@ -62,6 +76,12 @@ function App() {
               "Appointments",
               "Tools",
               "Integrate",
+              "Settings",
+              "Support",
+              "Workflows",
+              "Privacy",
+              "Analytics",
+              "Team",
             ].map((name, i) => (
               <button
                 key={name}
@@ -72,7 +92,7 @@ function App() {
                 }}
               >
                 <span aria-hidden="true">
-                  {["◫", "▤", "◌", "▦", "⌘", "↗"][i]}
+                  {["◫", "▤", "◌", "▦", "⌘", "↗", "⚙", "☏", "⇢", "◇", "▥"][i]}
                 </span>
                 {name}
               </button>
@@ -107,6 +127,7 @@ function App() {
           <nav aria-label="Widget navigation">
             <button onClick={() => setTab("Chat")}>Chat</button>
             <button onClick={() => setTab("Appointments")}>Appointments</button>
+            <button onClick={() => setTab("Support")}>Support</button>
           </nav>
         )}
         <header>
@@ -171,6 +192,26 @@ function App() {
         {tab === "Appointments" && <AppointmentsScreen studio={studio} />}
         {tab === "Tools" && <ToolsScreen studio={studio} />}
         {tab === "Integrate" && <IntegrateScreen studio={studio} />}
+        {assistant && tab === "Settings" && (
+          <Settings
+            key={assistant}
+            assistant={assistant}
+            onChanged={() => void studio.refreshBranding()}
+          />
+        )}
+        {project && tab === "Support" && (
+          <Support key={project} project={project} />
+        )}
+        {project && tab === "Workflows" && (
+          <Workflows key={project} project={project} />
+        )}
+        {project && tab === "Privacy" && (
+          <Privacy key={project} project={project} />
+        )}
+        {project && tab === "Analytics" && (
+          <Analytics key={project} project={project} />
+        )}
+        {project && tab === "Team" && <Team key={project} project={project} />}
         <footer>
           <span>◈ &nbsp; Assistant Studio</span>
           <span>Local first. Evidence always.</span>

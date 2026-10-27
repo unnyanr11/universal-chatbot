@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { type ChatResult, type Citation } from "../../../packages/js-sdk/index";
+import {
+  streamChat,
+  type ChatResult,
+  type Citation,
+} from "../../../packages/js-sdk/index";
 import {
   client,
   widget,
@@ -14,6 +18,11 @@ import {
   type ChatMessage,
 } from "./model";
 export function useStudio() {
+  const [branding, setBranding] = useState<{
+    color: string;
+    suggested_questions: string[];
+  }>();
+  const [retrieval, setRetrieval] = useState("lexical");
   const [token, setToken] = useState(""),
     [email, setEmail] = useState("owner@cedar.example"),
     [password, setPassword] = useState("");
@@ -56,6 +65,17 @@ export function useStudio() {
     } finally {
       setBusy(false);
     }
+  }
+  async function refreshBranding() {
+    if (!assistant) return;
+    const configuration = await client.request<{
+      configuration: { color: string; suggested_questions: string[] };
+    }>(bot("/configuration"));
+    setBranding(configuration.configuration);
+    const bots = await client.request<{ items: Assistant[] }>(
+      api("/assistants"),
+    );
+    setAssistants(bots.items);
   }
   async function refreshBookings() {
     setBookings(
@@ -124,6 +144,7 @@ export function useStudio() {
     setDocs([]);
     setSource(null);
     setResults([]);
+    setBranding(undefined);
     if (!assistant) return;
     let active = true;
     const load = () =>
@@ -136,6 +157,14 @@ export function useStudio() {
           if (active) setError(e.message);
         });
     void load();
+    client
+      .request<{
+        configuration: { color: string; suggested_questions: string[] };
+      }>(bot("/configuration"))
+      .then((result) => {
+        if (active) setBranding(result.configuration);
+      })
+      .catch(() => {});
     const timer = setInterval(load, 4000);
     return () => {
       active = false;
@@ -165,18 +194,77 @@ export function useStudio() {
     setMessages((m) => [...m, { role: "user", text }]);
     controller.current = new AbortController();
     await action(async () => {
-      const r: ChatResult = await client.chat(
-        assistant,
-        text,
-        conversation,
-        mode,
-        controller.current!.signal,
-      );
-      setConversation(r.conversation_id);
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", text: r.text, citations: r.citations },
-      ]);
+      if (mode === "local") {
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", text: "", provisional: true, mode: "local" },
+        ]);
+        let complete = false;
+        try {
+          for await (const event of streamChat(
+            client,
+            assistant,
+            { text, conversation_id: conversation, mode, retrieval },
+            controller.current!.signal,
+          )) {
+            if (event.type === "meta")
+              setConversation(event.data.conversation_id as string);
+            if (event.type === "token")
+              setMessages((m) =>
+                m.map((item, index) =>
+                  index === m.length - 1
+                    ? { ...item, text: item.text + String(event.data.text) }
+                    : item,
+                ),
+              );
+            if (event.type === "error")
+              throw new Error(String(event.data.code));
+            if (event.type === "result") {
+              const result = event.data as unknown as ChatResult;
+              setConversation(result.conversation_id);
+              setMessages((m) =>
+                m.map((item, index) =>
+                  index === m.length - 1
+                    ? {
+                        role: "assistant",
+                        text: result.text,
+                        citations: result.citations,
+                        mode: result.mode,
+                      }
+                    : item,
+                ),
+              );
+              complete = true;
+            }
+          }
+          if (!complete)
+            throw new Error(
+              "Response interrupted; provisional text was discarded.",
+            );
+        } finally {
+          if (!complete)
+            setMessages((m) => m.filter((item) => !item.provisional));
+        }
+      } else {
+        const r: ChatResult = await client.chat(
+          assistant,
+          text,
+          conversation,
+          mode,
+          controller.current!.signal,
+          retrieval,
+        );
+        setConversation(r.conversation_id);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            text: r.text,
+            citations: r.citations,
+            mode: r.mode,
+          },
+        ]);
+      }
     });
   }
   async function chooseService(id: string) {
@@ -234,6 +322,10 @@ export function useStudio() {
     });
   }
   return {
+    branding,
+    refreshBranding,
+    retrieval,
+    setRetrieval,
     token,
     setToken,
     email,

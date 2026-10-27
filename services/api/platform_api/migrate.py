@@ -17,11 +17,17 @@ def migrate(url):
         if version is None:
             Base.metadata.create_all(conn)
             conn.execute(text("INSERT INTO schema_version VALUES (1)"))
-        elif version not in (1, 2):
+        elif version not in (1, 2, 3, 4):
             raise RuntimeError("Unsupported schema version")
-        if version != 2:
+        if version is None or version < 2:
             Base.metadata.create_all(conn)
             conn.execute(text("INSERT INTO schema_version VALUES (2)"))
+        if version is None or version < 3:
+            Base.metadata.create_all(conn)
+            conn.execute(text("INSERT INTO schema_version VALUES (3)"))
+        if version is None or version < 4:
+            Base.metadata.create_all(conn)
+            conn.execute(text("INSERT INTO schema_version VALUES (4)"))
     engine.dispose()
 
 

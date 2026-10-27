@@ -1,5 +1,6 @@
 """Durable leased ingestion and idempotent in-app reminder delivery."""
 
+import asyncio
 import json
 import os
 import secrets
@@ -9,7 +10,8 @@ import time
 
 from sqlalchemy import and_, or_, select, update
 
-from .database import Chunk, Document, Job, Reminder, connect
+from .database import Chunk, Document, Embedding, Job, Reminder, connect
+from .inference import ProviderUnavailable, embed_texts
 
 
 def run_once(sessions):
@@ -77,6 +79,33 @@ def run_once(sessions):
         failure = ""
     except (subprocess.SubprocessError, ValueError):
         chunks, failure = [], "Extraction failed or exceeded limits; use UTF-8 text or a text PDF."
+    embeddings, embedding_warning = [], ""
+    model = os.getenv("OLLAMA_EMBED_MODEL", "")
+    if model and chunks and not failure and len(chunks) <= 64:
+        try:
+            for offset in range(0, len(chunks), 16):
+                with sessions.begin() as lease_db:
+                    lease_db.execute(
+                        update(Job)
+                        .where(Job.document_id == claimed, Job.lease_token == token)
+                        .values(lease_until=int(time.time()) + 90)
+                    )
+                embeddings.extend(
+                    asyncio.run(
+                        embed_texts(
+                            os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+                            model,
+                            [chunk["text"] for chunk in chunks[offset : offset + 16]],
+                        )
+                    )
+                )
+        except ProviderUnavailable:
+            embeddings = []
+            embedding_warning = "Lexical index ready; local semantic indexing failed."
+    if model and len(chunks) > 64:
+        embedding_warning = (
+            "Lexical index ready; semantic indexing is limited to 64 chunks per document."
+        )
     with sessions.begin() as db:
         # Deleted documents/jobs or superseded leases cannot be resurrected.
         owned = db.execute(
@@ -88,9 +117,15 @@ def run_once(sessions):
         document = db.get(Document, claimed)
         if owned and document:
             document.status = "failed" if failure else "ready"
-            document.error = failure
+            document.error = failure or embedding_warning
             for i, chunk in enumerate(chunks):
-                db.add(Chunk(document_id=claimed, ordinal=i, **chunk))
+                record = Chunk(document_id=claimed, ordinal=i, **chunk)
+                db.add(record)
+                if embeddings:
+                    db.flush()
+                    db.add(
+                        Embedding(chunk_id=record.id, model=model, vector=json.dumps(embeddings[i]))
+                    )
     return True
 
 

@@ -20,6 +20,7 @@ export function KnowledgeScreen({ studio }: { studio: StudioState }) {
     action,
     refreshDocs,
   } = studio;
+  const { retrieval, setRetrieval } = studio;
   return (
     <>
       <section className="panel">
@@ -101,6 +102,15 @@ export function KnowledgeScreen({ studio }: { studio: StudioState }) {
       </section>
       <section className="panel">
         <h2>Retrieval debugger</h2>
+        <select
+          aria-label="Debug retrieval method"
+          value={retrieval}
+          onChange={(e) => setRetrieval(e.target.value)}
+        >
+          <option value="lexical">Lexical</option>
+          <option value="semantic">Semantic (local embeddings required)</option>
+          <option value="hybrid">Hybrid (local embeddings required)</option>
+        </select>
         <p className="muted">
           Lexical ranking scores describe search relevance, not answer
           confidence.
@@ -114,7 +124,14 @@ export function KnowledgeScreen({ studio }: { studio: StudioState }) {
                 (
                   await client.request<{
                     items: (Citation & { score: number })[];
-                  }>(bot("/search?q=" + encodeURIComponent(debugQuery)))
+                  }>(
+                    bot(
+                      "/search?q=" +
+                        encodeURIComponent(debugQuery) +
+                        "&method=" +
+                        retrieval,
+                    ),
+                  )
                 ).items,
               ),
             );

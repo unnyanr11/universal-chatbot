@@ -34,3 +34,11 @@ No phase is declared complete while its acceptance gates remain missing.
 | React Native, voice, Flutter, cloud | Optional later milestones | No adapters silently enabled |
 
 Next acceptance work: run Compose/real-model tests, add local embeddings and streaming, extend calendar policies, then implement generic tool registry, human support, signed client identity and durable workflows. External credentials do not block independent local features.
+
+## Current extension (verification in progress)
+
+Implemented paths now include versioned configuration/publish/rollback with pinned source manifests; owned conversation history/export; a human inbox with assignments, private notes and paused automation; opt-in expiring preference records; workspace personal-data export/deletion; payload-free audit events and measured analytics; a bounded durable workflow editor/engine with dry runs, checkpoints, expiring booking approval and version pinning.
+
+Local semantic/hybrid retrieval, batched embedding ingestion and provisional token streaming are implemented behind the local provider boundary. Provider transport tests are separate from real inference. A CI job downloads two Apache-2.0 SmolLM2 configurations and all-minilm weights to exercise actual completion, streaming, embeddings and the Compose stack. Results must be observed before declaring those paths verified.
+
+The earlier ledger describes the previous committed baseline; it will be reconciled after this extension's database/browser/runtime checks. No unsupported external provider is reported connected.

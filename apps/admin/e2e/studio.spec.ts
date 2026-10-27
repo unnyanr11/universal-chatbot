@@ -13,15 +13,13 @@ test("knowledge and booking journey uses real local services", async ({
     page.getByRole("heading", { name: "Overview", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Knowledge", exact: true }).click();
-  await page
-    .getByLabel("Upload source")
-    .setInputFiles({
-      name: "cedar-faq.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from(
-        "Cedar bicycle service hours are 09:00 to 17:00 on weekdays.",
-      ),
-    });
+  await page.getByLabel("Upload source").setInputFiles({
+    name: "cedar-faq.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(
+      "Cedar bicycle service hours are 09:00 to 17:00 on weekdays.",
+    ),
+  });
   await expect(page.getByText("ready", { exact: true })).toBeVisible({
     timeout: 15000,
   });

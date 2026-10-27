@@ -1,3 +1,4 @@
+import { ChatContinuity } from "../features/ChatContinuity";
 import { type StudioState } from "../useStudio";
 import { client, localTime, widget, type Assistant } from "../model";
 import { type Citation } from "../../../../packages/js-sdk/index";
@@ -22,21 +23,34 @@ export function ChatScreen({ studio }: { studio: StudioState }) {
     send,
     clearChat,
   } = studio;
+  const { retrieval, setRetrieval } = studio;
   const current = studio.assistants.find((a) => a.id === studio.assistant);
   return (
     <div className="chat-layout">
       <section className="chat panel">
+        <ChatContinuity studio={studio} />
         <div className="chat-toolbar">
           <span>
             <i className="online" /> {current?.name ?? "Choose an assistant"}
           </span>
           <select
+            disabled={busy}
             aria-label="Answer mode"
             value={mode}
             onChange={(e) => setMode(e.target.value)}
           >
             <option value="extractive">Source passages · no AI</option>
             <option value="local">Local model · Ollama required</option>
+          </select>
+          <select
+            aria-label="Chat retrieval method"
+            value={retrieval}
+            disabled={busy}
+            onChange={(e) => setRetrieval(e.target.value)}
+          >
+            <option value="lexical">Lexical search</option>
+            <option value="semantic">Semantic · local embeddings</option>
+            <option value="hybrid">Hybrid · local embeddings</option>
           </select>
           <button disabled={busy} onClick={clearChat}>
             Clear
@@ -48,11 +62,15 @@ export function ChatScreen({ studio }: { studio: StudioState }) {
               <div className="assistant-icon">◈</div>
               <h2>What would you like to know?</h2>
               <p>
-                Ask about the information in your approved sources,
-                <br />
-                or browse services to book an appointment.
+                {current?.welcome_message ||
+                  "Ask about the information in your approved sources, or browse services to book an appointment."}
               </p>
               <div className="suggestions">
+                {studio.branding?.suggested_questions.map((q) => (
+                  <button key={q} onClick={() => setQuestion(q)}>
+                    {q} ↗
+                  </button>
+                ))}
                 <button
                   onClick={() => setQuestion("What services do you offer?")}
                 >
@@ -69,9 +87,13 @@ export function ChatScreen({ studio }: { studio: StudioState }) {
               <small>
                 {m.role === "user"
                   ? "YOU"
-                  : mode === "extractive"
-                    ? "SOURCE PASSAGES"
-                    : "AI ANSWER · CHECK SOURCES"}
+                  : m.role === "human"
+                    ? "HUMAN AGENT"
+                    : m.provisional
+                      ? "AI TEXT · PROVISIONAL"
+                      : m.mode === "extractive"
+                        ? "SOURCE PASSAGES"
+                        : "ASSISTANT · CHECK SOURCES"}
               </small>
               <p>{m.text}</p>
               {m.citations?.map((c, n) => (
