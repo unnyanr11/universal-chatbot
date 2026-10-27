@@ -15,4 +15,6 @@ Browser acceptance is not verified locally: Playwright was installed but Chromiu
 
 Not verified here: PostgreSQL migrations/concurrency, Docker build/Compose, actual Ollama model inference, target-user hardware latency, semantic retrieval, mobile integration, external delivery, security audit or complete transitive licence inventory. No adoption or business-impact metrics are claimed.
 
+Dependency audit: the initial Vite pin had a reported high-severity development-server vulnerability. It was updated to 7.3.7; the subsequent npm audit reported zero vulnerabilities in this locked dependency tree. This audit does not cover Python packages, model weights or application-level security.
+
 Known dependency warning: Starlette currently deprecates its httpx TestClient bridge in favour of httpx2. The pinned bridge still passes the suite; migrate before upgrading to a version that removes it.

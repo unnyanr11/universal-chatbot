@@ -42,6 +42,7 @@ export function AppointmentsScreen({ studio }: { studio: StudioState }) {
           <label>
             Service
             <select
+              aria-label="Service"
               value={service}
               onChange={(e) => chooseService(e.target.value)}
             >
