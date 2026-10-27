@@ -12,7 +12,8 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 
 @pytest.fixture
-def setup(tmp_path):
+def setup(tmp_path, monkeypatch):
+    monkeypatch.setenv("AI_PROVIDER", "ollama")
     url = f"sqlite:///{tmp_path / 'test.db'}"
     postgres = os.getenv("TEST_DATABASE_URL")
     master = None

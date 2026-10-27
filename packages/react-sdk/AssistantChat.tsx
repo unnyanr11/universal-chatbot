@@ -4,6 +4,7 @@ export interface AssistantChatProps {
   assistantId: string;
   token: string;
   apiBase?: string;
+  mode?: "extractive" | "model";
   onCitation?: (citation: Citation) => void;
   onResult?: (result: ChatResult) => void;
 }
@@ -12,6 +13,7 @@ export function AssistantChat({
   assistantId,
   token,
   apiBase = "",
+  mode = "extractive",
   onCitation,
   onResult,
 }: AssistantChatProps) {
@@ -42,7 +44,7 @@ export function AssistantChat({
         assistantId,
         question,
         conversation,
-        "extractive",
+        mode,
         controller.current.signal,
       );
       setConversation(result.conversation_id);

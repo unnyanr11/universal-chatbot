@@ -6,6 +6,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from cryptography.fernet import Fernet
 from platform_api.migrate import migrate
 from platform_api.seed import seed
 
@@ -14,6 +15,9 @@ def main():
     with tempfile.TemporaryDirectory() as folder:
         os.environ["DATABASE_URL"] = "sqlite:///" + str(Path(folder) / "browser.db")
         os.environ["APP_ENV"] = "development"
+        os.environ["PROVIDER_SECRET_KEY"] = Fernet.generate_key().decode()
+        os.environ["AI_PROVIDER"] = "ollama"
+        os.environ["OLLAMA_MODEL"] = ""
         os.environ["DEMO_PASSWORD"] = "synthetic-e2e-password"
         migrate(os.environ["DATABASE_URL"])
         seed()

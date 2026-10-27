@@ -167,3 +167,45 @@ test("booking can be completed inside the chat with a server-owned action card",
     page.locator(".booking-row").filter({ hasText: reference }),
   ).toContainText("confirmed");
 });
+
+test("provider credentials save privately for every cloud preset and reset safely", async ({
+  page,
+}) => {
+  await login(page);
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  for (const provider of [
+    "openai",
+    "gemini",
+    "claude",
+    "kimi",
+    "nvidia",
+    "deepseek",
+  ]) {
+    await page
+      .getByLabel("AI provider", { exact: true })
+      .selectOption(provider);
+    await page.getByLabel("Provider model ID").fill("synthetic-account-model");
+    await page.getByLabel("Provider API key").fill("synthetic-browser-secret");
+    await page.getByLabel(/Allow this service to receive/).check();
+    const response = page.waitForResponse(
+      (r) => r.url().endsWith("/provider") && r.request().method() === "PUT",
+    );
+    await page
+      .getByRole("button", { name: "Save AI provider", exact: true })
+      .click();
+    const saved = await response;
+    expect(saved.status()).toBe(200);
+    expect(await saved.text()).not.toContain("synthetic-browser-secret");
+    await expect(page.getByLabel("Provider API key")).toHaveValue("");
+    await expect(
+      page.getByRole("button", { name: "Use deployment default" }),
+    ).toBeEnabled();
+  }
+  await page.getByRole("button", { name: "Use deployment default" }).click();
+  await expect(page.getByLabel("AI provider", { exact: true })).toHaveValue(
+    "ollama",
+  );
+  await expect(
+    page.getByRole("button", { name: "Use deployment default" }),
+  ).toBeDisabled();
+});

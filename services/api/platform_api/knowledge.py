@@ -114,7 +114,7 @@ class ChatInput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     text: str = Field(min_length=1, max_length=4000)
     conversation_id: str | None = None
-    mode: str = Field(default="extractive", pattern="^(extractive|local)$")
+    mode: str = Field(default="extractive", pattern="^(extractive|local|model)$")
     retrieval: str = Field(default="lexical", pattern="^(lexical|semantic|hybrid)$")
 
 
@@ -401,7 +401,7 @@ async def chat(
         answer = "Relevant passages from your sources:\n\n" + "\n\n".join(
             f"[{i}] {item['text']}" for i, item in enumerate(evidence, 1)
         )
-    if evidence and body.mode == "local":
+    if evidence and body.mode in {"local", "model"}:
         settings = db.get(AssistantSettings, scope[0].id)
         config = json.loads(settings.configuration) if settings else {}
         if settings and settings.published_version:
@@ -450,19 +450,36 @@ async def chat(
             + "\nQuestion: "
             + body.text
         )
+        from .providers import resolve_provider
+
+        try:
+            provider = resolve_provider(request, db, scope[0].id)
+        except ProviderUnavailable as exc:
+            raise HTTPException(503, exc.code) from None
         if "text/event-stream" in request.headers.get("accept", ""):
             from .streaming import chat_stream
 
             db.rollback()
             return chat_stream(
-                request, scope[0], session, conversation_id, body.text, evidence, prompt
+                request,
+                scope[0],
+                session,
+                conversation_id,
+                body.text,
+                evidence,
+                prompt,
+                provider=provider,
+                mode=body.mode,
             )
         try:
             async with asyncio.timeout(65):
-                answer = await request.app.state.provider.complete(prompt)
-        except (ProviderUnavailable, TimeoutError):
+                answer = await provider.complete(prompt)
+        except ProviderUnavailable as exc:
             db.rollback()
-            raise HTTPException(503, "LOCAL_INFERENCE_UNAVAILABLE") from None
+            raise HTTPException(503, exc.code) from None
+        except TimeoutError:
+            db.rollback()
+            raise HTTPException(503, "PROVIDER_TIMEOUT") from None
         # Unsupported citation numbers never become source links. Generation remains fallible.
         numbers = [int(n) for n in re.findall(r"\[(\d+)\]", answer)]
         if not numbers or any(n < 1 or n > len(evidence) for n in numbers):

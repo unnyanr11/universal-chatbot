@@ -84,7 +84,7 @@ jobs:
       - run: docker rm -f model-smoke
       - name: First-run installer with actual local models
         run: |
-          printf '%s\n' 'synthetic-installer-owner-password' | python scripts/setup.py --domain '' --owner-email owner@setup.example.test --organization 'Installer test' --password-stdin --no-browser
+          printf '%s\n' 'synthetic-installer-owner-password' | python scripts/setup.py --domain '' --provider ollama --owner-email owner@setup.example.test --organization 'Installer test' --password-stdin --no-browser
       - name: Installer rerun preserves existing accounts and database credentials
         run: python scripts/setup.py --no-browser
       - name: Validate HTTPS proxy configuration

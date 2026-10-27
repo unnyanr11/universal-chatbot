@@ -3,6 +3,7 @@
 import json
 import re
 import time
+from contextlib import aclosing
 
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -15,7 +16,18 @@ def event(kind, payload):
     return f"event: {kind}\ndata: {json.dumps(payload)}\n\n"
 
 
-def chat_stream(request, assistant, session, conversation_id, question, evidence, prompt):
+def chat_stream(
+    request,
+    assistant,
+    session,
+    conversation_id,
+    question,
+    evidence,
+    prompt,
+    *,
+    provider=None,
+    mode="local",
+):
     from .knowledge import citations
 
     assistant_id, project_id = assistant.id, assistant.project_id
@@ -27,13 +39,18 @@ def chat_stream(request, assistant, session, conversation_id, question, evidence
         yield event("meta", {"conversation_id": conversation_id, "provisional": True})
         answer = ""
         try:
-            async for token in stream_completion(request.app.state.provider, prompt):
-                if await request.is_disconnected():
-                    return
-                answer += token
-                if len(answer) > 16000:
-                    raise ProviderUnavailable("Output budget exceeded")
-                yield event("token", {"text": token})
+            async with aclosing(
+                stream_completion(
+                    provider if provider is not None else request.app.state.provider, prompt
+                )
+            ) as tokens:
+                async for token in tokens:
+                    if await request.is_disconnected():
+                        return
+                    answer += token
+                    if len(answer) > 16000:
+                        raise ProviderUnavailable("Output budget exceeded")
+                    yield event("token", {"text": token})
             with request.app.state.sessions() as db:
                 current = db.get(Session, session_digest)
                 project = db.get(Project, project_id)
@@ -86,12 +103,12 @@ def chat_stream(request, assistant, session, conversation_id, question, evidence
                     "conversation_id": conversation_id,
                     "text": answer,
                     "citations": active,
-                    "mode": "local",
+                    "mode": mode,
                     "generation_streaming": True,
                 },
             )
-        except ProviderUnavailable:
-            yield event("error", {"code": "LOCAL_INFERENCE_UNAVAILABLE"})
+        except ProviderUnavailable as exc:
+            yield event("error", {"code": exc.code})
         yield event("done", {})
 
     return StreamingResponse(

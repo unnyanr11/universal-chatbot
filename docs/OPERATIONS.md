@@ -26,7 +26,7 @@ In-app reminder records are real local notifications. No email/SMS delivery, dep
 
 ## Updated release operations
 
-Always run `python -m platform_api.migrate` before starting an updated checkout; the current additive schema revision is 6. Stop services and take an authorised backup before upgrading an existing deployment. The migration refuses a newer unsupported schema version. These revisions add tables; future destructive/type changes require explicit reviewed migrations.
+Always run `python -m platform_api.migrate` before starting an updated checkout; the current additive schema revision is 7. Stop services and take an authorised backup before upgrading an existing deployment. The migration refuses a newer unsupported schema version. These revisions add tables; future destructive/type changes require explicit reviewed migrations.
 
 The worker handles ingestion leases, reminder delivery and expired session/invitation/preference cleanup. If the database is temporarily unavailable, Compose restarts the worker; a native operator may need to restart its process. Workflow runs checkpoint in the database. The Workflows UI can recover an interrupted run after its 90-second lease expires, without replaying a completed booking.
 
@@ -43,3 +43,5 @@ CI has verified the Compose stack and real local model runtime; see VERIFICATION
 The public-domain option adds `compose.public.yaml` and Caddy. DNS and inbound TCP ports 80/443 must already reach the server. Setup verifies public HTTPS before declaring completion. Caddy certificate state is persisted in the `certificates` volume. Localhost remains the default. Restarting a domain installation manually requires both compose files: `docker compose -f compose.yaml -f compose.public.yaml up -d`. For logs use the same files with `logs --tail=100`; never post `.env` or owner credentials in support messages.
 
 The installer checks real model completion, embedding generation and newly created guide ingestion. It does not certify model answer quality or configure external providers, mail delivery, DNS or real business staff/policies. See STATUS.md for those boundaries. Public TLS issuance is conditional on the operator's domain; CI validates Caddy configuration, while actual certificates are checked by the installer at deployment time.
+
+Cloud provider configuration and encrypted key backup/restore are documented in PROVIDERS.md. Always preserve PROVIDER_SECRET_KEY across container recreation and updates; regenerating it makes stored per-assistant keys unreadable. The wizard reuses it and existing database credentials. Cloud readiness failure stops setup rather than silently switching to Ollama. Model/account-specific failures return sanitized PROVIDER_* codes; check the selected model, key, budget and provider account status.

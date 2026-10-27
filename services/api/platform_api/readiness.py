@@ -8,8 +8,9 @@ import time
 import httpx
 from sqlalchemy import select, text
 
+from .cloud import environment_provider
 from .database import Document, User, connect
-from .inference import OllamaProvider, embed_texts
+from .inference import embed_texts
 
 
 async def check(document_id=None, base_url="http://api:8000"):
@@ -25,16 +26,16 @@ async def check(document_id=None, base_url="http://api:8000"):
                 response.raise_for_status()
             if "text/html" not in response.headers.get("content-type", ""):
                 raise RuntimeError("Compiled application UI is unavailable")
-        model = os.getenv("OLLAMA_MODEL", "")
         embedding = os.getenv("OLLAMA_EMBED_MODEL", "")
         base = os.environ["OLLAMA_BASE_URL"]
-        if model:
-            provider = OllamaProvider(base, model)
-            if (await provider.check())["status"] != "available":
-                raise RuntimeError("Configured local model is unavailable")
+        provider = environment_provider()
+        status = (await provider.check())["status"]
+        if status in {"available", "configured"}:
             if not (await provider.complete("Say ready in one short sentence.")).strip():
-                raise RuntimeError("Local model returned an empty response")
-            print("Local model completion passed.")
+                raise RuntimeError("Configured AI returned an empty response")
+            print("Configured AI completion passed.")
+        elif status != "unconfigured" or os.getenv("AI_PROVIDER", "ollama") != "ollama":
+            raise RuntimeError("Configured AI is unavailable")
         if embedding:
             await embed_texts(base, embedding, ["Getting started with Assistant Studio"])
             print("Local embeddings passed.")

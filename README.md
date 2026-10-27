@@ -7,7 +7,7 @@ A self-hostable, local-first assistant platform with a React admin application, 
 - Separate organisations/projects, assistants, roles, invitation links, expiring/revocable sessions and password rotation.
 - Versioned assistant branding/configuration, draft/publish/source manifests, import/export and rollback.
 - TXT/Markdown/CSV/DOCX/text-PDF ingestion with durable worker leases, bounded extraction and deletion/redaction.
-- Lexical search, optional local semantic/hybrid retrieval, cited passage answers and provisional Ollama token streaming.
+- Lexical search, optional local semantic/hybrid retrieval, cited passage answers and provisional streaming with Ollama, OpenAI, Gemini, Claude, Kimi, NVIDIA, DeepSeek and approved compatible endpoints.
 - Owned conversation history, short follow-up context, export/delete and server-created booking cards directly inside chat.
 - Services/staff, opening periods/breaks, holidays, buffers, lead times, windows, cancellation policy and DST-safe availability.
 - Explicit booking approval, atomic slot/staff capacity, idempotent receipts, cancellation and rescheduling rollback.
@@ -30,11 +30,11 @@ python3 scripts/setup.py
 
 On Windows use `python scripts/setup.py`. Already cloned? Run `git pull` first, then the setup command.
 
-The wizard asks for a domain (blank means localhost), your owner email, organisation and a password. It generates a private database password, builds the application, runs migrations, downloads the starter local generation/embedding models, creates your account and assistant, and indexes a product getting-started guide. It tests actual model completion, embeddings, the worker, database and UI before reporting success. Your account password is sent over stdin, never saved in `.env` or command arguments. Rerunning preserves existing accounts, database credentials and data; it resumes interrupted setup rather than resetting the installation.
+The wizard asks for a domain (blank means localhost), an AI provider, your owner email, organisation and a password. Cloud providers also require a model ID and API key. It generates a private database password, builds the application, runs migrations, prepares the selected generation provider and local embedding model, creates your account and assistant, and indexes a product getting-started guide. It tests actual model completion, embeddings, the worker, database and UI before reporting success. Your account password is sent over stdin, never saved in `.env` or command arguments. Rerunning preserves existing accounts, database credentials and data; it resumes interrupted setup rather than resetting the installation.
 
-Open the URL printed by setup and sign in with **your chosen owner email/password**. Local model mode is selected automatically when the provider is available. Ask **“How do I upload my business documents?”** to test the starter guide, then add your own approved documents in Knowledge. The guide describes this product; it does not supply fictional business policies, staff or availability. Add your real services and staff in Calendars before testing bookings.
+Open the URL printed by setup and sign in with **your chosen owner email/password**. AI mode is selected automatically when the provider is available/configured. Ask **“How do I upload my business documents?”** to test the starter guide, then add your own approved documents in Knowledge. The guide describes this product; it does not supply fictional business policies, staff or availability. Add your real services and staff in Calendars before testing bookings.
 
-The starter profile uses `smollm2:360m` and `all-minilm:latest`; it is a small CPU profile verified by runtime smoke tests, not a business-answer quality guarantee. Downloads and builds require internet, storage and time. To explicitly start without AI/model downloads, use `python3 scripts/setup.py --source-only` (source-passage answers). To use another installed/reviewed model, set its exact tag in the generated `.env` and rerun setup; the installer preserves nonempty model tags.
+The default local profile uses `smollm2:360m` and `all-minilm:latest`; it is a small CPU profile verified by runtime smoke tests, not a business-answer quality guarantee. Downloads and builds require internet, storage and time. To explicitly start without AI/model downloads, use `python3 scripts/setup.py --source-only` (source-passage answers). To use another installed/reviewed model, set its exact tag in the generated `.env` and rerun setup; the installer preserves nonempty model tags.
 
 ### Public HTTPS hosting
 
@@ -98,6 +98,12 @@ docker compose run --rm -e DEMO_PASSWORD='your-unique-long-password' api python 
 
 Alternatively bootstrap an empty database with `docker compose run --rm api python -m platform_api.bootstrap`. Compose runs PostgreSQL, migration, API, worker and Ollama. Only the application port is published to loopback; raw model and database ports are private. Native commands require exported shell variables; `.env` is automatically read by Compose only.
 
+## Cloud API keys
+
+Select OpenAI, Gemini, Claude, Kimi, NVIDIA, DeepSeek or a custom compatible service in the setup wizard, or configure an assistant in **Settings → AI provider**. Settings keys are encrypted and write-only. Owners/administrators can save, replace, test and remove credentials. Connection tests make small actual requests; provider charges apply according to your account. Cloud generation sends relevant questions/source/context text to that provider.
+
+See [PROVIDERS.md](docs/PROVIDERS.md) for configuration, custom endpoint approval, secure key storage, error handling and explicit live-account testing limits. Embeddings remain local, or use lexical retrieval without embeddings. No cloud API key was supplied for live cloud-provider acceptance in this work; offline adapter contracts and browser configuration are tested separately.
+
 ## Enable local models
 
 Models are optional and downloaded separately after hardware/licence review. The verified CPU smoke profile uses Apache-2.0 SmolLM2 configurations and all-minilm:
@@ -147,6 +153,7 @@ Browser tests start an isolated synthetic API/worker; stop any server occupying 
 - [Architecture and boundaries](docs/ARCHITECTURE.md)
 - [Security, privacy and retention](docs/SECURITY.md)
 - [Operations and backup/restore](docs/OPERATIONS.md)
+- [AI providers and API keys](docs/PROVIDERS.md)
 - [Client integrations](docs/CLIENTS.md)
 - [Feature status](docs/STATUS.md)
 

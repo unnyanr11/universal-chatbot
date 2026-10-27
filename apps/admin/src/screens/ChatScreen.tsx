@@ -41,7 +41,7 @@ export function ChatScreen({ studio }: { studio: StudioState }) {
             onChange={(e) => setMode(e.target.value)}
           >
             <option value="extractive">Source passages · no AI</option>
-            <option value="local">Local model · Ollama required</option>
+            <option value="model">AI · configured provider</option>
           </select>
           <select
             aria-label="Chat retrieval method"

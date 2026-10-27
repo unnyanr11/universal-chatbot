@@ -7,7 +7,9 @@ import httpx
 
 
 class ProviderUnavailable(Exception):
-    pass
+    def __init__(self, message=None, *, code="INFERENCE_UNAVAILABLE"):
+        super().__init__(message or code)
+        self.code = code
 
 
 class ModelProvider(Protocol):
@@ -48,6 +50,9 @@ class OllamaProvider:
             raise ProviderUnavailable("Local inference exceeded its total deadline") from None
         finally:
             self._gate.release()
+
+    def stream(self, prompt):
+        return _ollama_stream(self, prompt)
 
     async def _complete(self, prompt: str):
         if not self.model:
@@ -96,7 +101,7 @@ async def embed_texts(base_url: str, model: str, texts: list[str]) -> list[list[
         raise ProviderUnavailable("Local embeddings unavailable") from exc
 
 
-async def stream_completion(provider: OllamaProvider, prompt: str):
+async def _ollama_stream(provider: OllamaProvider, prompt: str):
     """Yield actual model tokens with bounded admission and cancellation cleanup."""
     import json
 
@@ -132,3 +137,7 @@ async def stream_completion(provider: OllamaProvider, prompt: str):
         raise ProviderUnavailable("Local model stream failed") from exc
     finally:
         provider._gate.release()
+
+
+def stream_completion(provider, prompt):
+    return provider.stream(prompt)

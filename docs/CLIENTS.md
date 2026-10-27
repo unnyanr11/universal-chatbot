@@ -19,3 +19,5 @@ The source component is type-checked separately by `tsc -p packages/react-sdk/ts
 `EXPO_PUBLIC_API_URL` is a public application API origin, never a model-server URL or a privileged secret. Android emulators can use `http://10.0.2.2:8000`; physical devices need a reachable development host. Use TLS outside loopback/local synthetic testing and configure trusted network access deliberately. The example requires device/emulator acceptance; it has not been tested on a phone here. Reauthenticate when sessions expire; the example retains the current conversation while mounted, and history endpoints allow explicit resume.
 
 Flutter and voice remain optional, unimplemented adapters. Nothing silently falls back to screen scraping or an unconfigured external connector.
+
+Configured generation uses `mode: "model"`; `extractive` remains a generation-free option. The React component supports an optional `mode="model"` prop. Configure provider credentials on the server or in assistant Settings; applications only receive ordinary short-lived session tokens. See PROVIDERS.md.

@@ -32,3 +32,7 @@ Known dependency warning: the pinned Starlette TestClient bridge reports its htt
 The source run above invoked `scripts/setup.py` in a fresh CI environment with actual model downloads and a password supplied over stdin. The installer built/started the full Compose stack, created the initial owner and assistant, completed real model/embedding checks and indexed the getting-started guide. A second invocation completed with existing accounts/database credentials preserved. The backend suite independently verifies login to the bootstrapped workspace, preservation of existing users, safe configuration persistence and explicit child-process stdin isolation.
 
 All six browser journeys and both database suites passed on the same source commit. Public certificate issuance was not exercised against a real domain in CI: Caddy configuration validation passed, and the installer waits for verified public HTTPS on the operator's chosen domain before declaring a public deployment complete. No public host or DNS record was created in this work.
+
+## Cloud-provider extension (pending source CI)
+
+Completion/streaming adapters and private configuration support OpenAI, Gemini, Claude, Kimi, NVIDIA, DeepSeek and operator-approved compatible endpoints. Offline wire contracts and API/tenant/credential tests passed locally; no user cloud credentials were supplied, so no live cloud-account acceptance is claimed. A browser journey now saves each cloud preset and restores the default without paid requests. The updated source run will be recorded after CI completes.

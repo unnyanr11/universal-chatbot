@@ -79,6 +79,18 @@ export function useStudio() {
       setProject(result.project_id);
     });
   }
+  async function refreshProvider() {
+    if (!assistant) return;
+    const result = await client.request<{ status: string; provider?: string }>(
+      bot("/provider/status"),
+    );
+    setProvider(`${result.provider || "ollama"}: ${result.status}`);
+    setMode(
+      ["available", "configured"].includes(result.status)
+        ? "model"
+        : "extractive",
+    );
+  }
   async function refreshBranding() {
     if (!assistant) return;
     const configuration = await client.request<{
@@ -118,14 +130,6 @@ export function useStudio() {
         }
       })
       .catch((e) => setError(e.message));
-    client
-      .request<{ status: string }>("/v1/provider")
-      .then((r) => {
-        if (!active) return;
-        setProvider(r.status);
-        if (r.status === "available") setMode("local");
-      })
-      .catch(() => setProvider("unavailable"));
     return () => {
       active = false;
     };
@@ -179,6 +183,24 @@ export function useStudio() {
           if (active) setError(e.message);
         });
     void load();
+    setProvider("checking");
+    client
+      .request<{ status: string; provider?: string }>(bot("/provider/status"))
+      .then((result) => {
+        if (!active) return;
+        setProvider(`${result.provider || "ollama"}: ${result.status}`);
+        setMode(
+          ["available", "configured"].includes(result.status)
+            ? "model"
+            : "extractive",
+        );
+      })
+      .catch(() => {
+        if (active) {
+          setProvider("unavailable");
+          setMode("extractive");
+        }
+      });
     client
       .request<{
         configuration: { color: string; suggested_questions: string[] };
@@ -231,10 +253,10 @@ export function useStudio() {
     setMessages((m) => [...m, { role: "user", text }]);
     controller.current = new AbortController();
     await action(async () => {
-      if (mode === "local") {
+      if (mode === "local" || mode === "model") {
         setMessages((m) => [
           ...m,
-          { role: "assistant", text: "", provisional: true, mode: "local" },
+          { role: "assistant", text: "", provisional: true, mode },
         ]);
         let complete = false;
         try {
@@ -364,6 +386,7 @@ export function useStudio() {
     createOrganization,
     branding,
     refreshBranding,
+    refreshProvider,
     retrieval,
     setRetrieval,
     token,

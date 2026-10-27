@@ -79,3 +79,29 @@ def test_installer_child_processes_receive_only_explicit_input():
     command = [sys.executable, "-c", "import sys; print(sys.stdin.read(), end='')"]
     assert installer.run(command, capture=True) == ""
     assert installer.run(command, capture=True, data="synthetic-input") == "synthetic-input"
+
+
+def test_cloud_setup_preserves_master_key_and_never_reuses_another_provider_key():
+    base = installer.configure({}, domain="", port=None, source_only=False)
+    cloud = installer.configure_ai(
+        base, provider="kimi", model="account-model", api_key="synthetic-kimi-key"
+    )
+    assert cloud["OLLAMA_MODEL"] == "" and cloud["OLLAMA_EMBED_MODEL"]
+    assert cloud["AI_PROVIDER"] == "kimi"
+    assert installer.configure_ai(cloud) == cloud
+    with pytest.raises(installer.SetupError):
+        installer.configure_ai(cloud, provider="deepseek", model="another-model")
+    changed = installer.configure_ai(
+        cloud, provider="deepseek", model="another-model", api_key="synthetic-deepseek-key"
+    )
+    assert changed["PROVIDER_SECRET_KEY"] == cloud["PROVIDER_SECRET_KEY"]
+    assert changed["POSTGRES_PASSWORD"] == cloud["POSTGRES_PASSWORD"]
+    assert changed["AI_API_KEY"] == "synthetic-deepseek-key"
+    custom = installer.configure_ai(
+        changed,
+        provider="custom",
+        model="private-model",
+        api_key="synthetic-custom-key",
+        base_url="https://approved.example.test/v1",
+    )
+    assert custom["AI_CUSTOM_BASE_URLS"] == "https://approved.example.test/v1"

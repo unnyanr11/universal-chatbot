@@ -49,11 +49,11 @@ export function OverviewScreen({ studio }: { studio: StudioState }) {
         <article>
           <span>Answer mode</span>
           <strong className="word">
-            {mode === "local" ? "Local model" : "Source passages"}
+            {mode !== "extractive" ? "Configured AI" : "Source passages"}
           </strong>
           <small>
-            {mode === "local"
-              ? "Ollama · Answers grounded in your sources"
+            {mode !== "extractive"
+              ? "Answers grounded in your sources"
               : "Extractive baseline · No inference needed"}
           </small>
         </article>
@@ -74,7 +74,7 @@ export function OverviewScreen({ studio }: { studio: StudioState }) {
             [
               "02",
               "Ask a question",
-              "Inspect passages and try the local model.",
+              "Inspect passages and test your configured AI.",
               "Chat",
             ],
             [

@@ -241,6 +241,12 @@
       "version": "2026.5",
       "license_metadata": "Apache-2.0",
       "license_classifiers": []
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.2",
+      "license_metadata": "Apache-2.0 OR BSD-3-Clause",
+      "license_classifiers": []
     }
   ],
   "javascript": [

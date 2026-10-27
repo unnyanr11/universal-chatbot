@@ -11,6 +11,7 @@ import { AppointmentsScreen } from "./screens/AppointmentsScreen";
 import { ToolsScreen } from "./screens/ToolsScreen";
 import { IntegrateScreen } from "./screens/IntegrateScreen";
 import { Settings } from "./features/Settings";
+import { ProviderSettings } from "./features/ProviderSettings";
 import { Support } from "./features/Support";
 import { Privacy } from "./features/Privacy";
 import { Analytics } from "./features/Analytics";
@@ -138,7 +139,7 @@ function App() {
           <div className="sidebar-bottom">
             <div className="provider">
               <i />
-              Local workspace<small>Ollama: {provider}</small>
+              AI connection<small>{provider}</small>
             </div>
             <button
               className="text-button"
@@ -230,11 +231,18 @@ function App() {
         {tab === "Tools" && <ToolsScreen studio={studio} />}
         {tab === "Integrate" && <IntegrateScreen studio={studio} />}
         {assistant && tab === "Settings" && (
-          <Settings
-            key={assistant}
-            assistant={assistant}
-            onChanged={() => void studio.refreshBranding()}
-          />
+          <>
+            <ProviderSettings
+              key={assistant + "-provider"}
+              assistant={assistant}
+              onChanged={() => void studio.refreshProvider()}
+            />
+            <Settings
+              key={assistant}
+              assistant={assistant}
+              onChanged={() => void studio.refreshBranding()}
+            />
+          </>
         )}
         {project && tab === "Support" && (
           <Support key={project} project={project} />

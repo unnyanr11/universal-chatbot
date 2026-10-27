@@ -1,12 +1,11 @@
 """Versioned assistant configuration, user controls and measured project operations."""
 
 import json
-import os
 import re
 import time
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -180,7 +179,11 @@ def save_configuration(
 
 @router.post("/assistants/{assistant_id}/publish")
 def publish(
-    body: Revision, scope=Depends(assistant_scope), session=Depends(identity), db=Depends(database)
+    body: Revision,
+    request: Request,
+    scope=Depends(assistant_scope),
+    session=Depends(identity),
+    db=Depends(database),
 ):
     require_writer(scope)
     assistant = scope[0]
@@ -206,6 +209,10 @@ def publish(
         )
         or 0
     ) + 1
+    from .database import AssistantProvider
+    from .providers import metadata
+
+    provider = metadata(request, db.get(AssistantProvider, assistant.id))
     snapshot = {
         "configuration": json.loads(settings.configuration),
         "knowledge": [
@@ -218,7 +225,8 @@ def publish(
         ],
         "prompt_version": 1,
         "tool_version": 1,
-        "model": os.getenv("OLLAMA_MODEL", ""),
+        "model": provider["model"],
+        "provider": provider["provider"],
         "retrieval": "lexical-v1",
     }
     db.add(

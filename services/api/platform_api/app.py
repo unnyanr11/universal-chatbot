@@ -1,5 +1,6 @@
 """Phase 0 API: opaque revocable sessions and membership-derived authorization."""
 
+import asyncio
 import os
 import secrets
 import time
@@ -14,9 +15,10 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
+from .cloud import environment_provider
 from .context import WRITERS, database, digest, identity, project_scope
 from .database import Assistant, LoginWindow, Membership, Project, Session, User, connect
-from .inference import OllamaProvider, ProviderUnavailable
+from .inference import ProviderUnavailable
 
 passwords = PasswordHash.recommended()
 dummy_hash = passwords.hash(secrets.token_urlsafe(32))
@@ -51,9 +53,8 @@ def create_app(database_url=None, provider=None):
     )
     app.state.engine = engine
     app.state.sessions = sessions
-    app.state.provider = provider or OllamaProvider(
-        os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"), os.getenv("OLLAMA_MODEL", "")
-    )
+    app.state.inference_gate = asyncio.Semaphore(1)
+    app.state.provider = provider or environment_provider(app.state.inference_gate)
 
     @app.middleware("http")
     async def metadata(request: Request, call_next):
@@ -208,8 +209,8 @@ def create_app(database_url=None, provider=None):
         try:
             answer = await app.state.provider.complete(body.text)
             return {"text": answer, "mode": "ungrounded-model-diagnostic"}
-        except ProviderUnavailable:
-            raise HTTPException(503, "LOCAL_INFERENCE_UNAVAILABLE") from None
+        except ProviderUnavailable as exc:
+            raise HTTPException(503, exc.code) from None
 
     from .booking import router as booking_router
     from .calendars import router as calendar_router
@@ -225,6 +226,9 @@ def create_app(database_url=None, provider=None):
     app.include_router(registry_router)
     app.include_router(calendar_router)
     app.include_router(team_router)
+    from .providers import router as provider_router
+
+    app.include_router(provider_router)
     app.include_router(management_router)
     app.include_router(support_router)
     app.include_router(workflow_router)

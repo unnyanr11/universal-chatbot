@@ -350,3 +350,15 @@ class ChatAction(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     kind: Mapped[str]
     operation_id: Mapped[str] = mapped_column(default="")
+
+
+class AssistantProvider(Base):
+    __tablename__ = "assistant_providers"
+    assistant_id: Mapped[str] = mapped_column(ForeignKey("assistants.id"), primary_key=True)
+    provider: Mapped[str]
+    model: Mapped[str]
+    base_url: Mapped[str]
+    encrypted_key: Mapped[str] = mapped_column(default="")
+    max_tokens: Mapped[int] = mapped_column(default=1024)
+    token_parameter: Mapped[str] = mapped_column(default="max_tokens")
+    revision: Mapped[int] = mapped_column(default=1)

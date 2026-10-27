@@ -33,3 +33,9 @@ Bootstrap is explicit and restricted to an empty account database. Development s
 - No automatic backup expiry, full account deletion, legal-hold/compliance mechanism or external-provider deletion is claimed. Protect and expire backups under an operator policy. No general-purpose integration secret store exists because no external credential-based adapter is enabled.
 
 Use separate databases/credentials/deployments for development, staging and production. Project environment labels do not themselves isolate server credentials. Report suspected vulnerabilities privately to the repository maintainer with synthetic reproductions; no reporting email has been configured.
+
+## Cloud generation credentials
+
+AI generation providers are explicitly configured by the server operator or assistant owner/administrator. Questions, source excerpts, context and preferences sent to a cloud provider are subject to that service's policies. Source-passage mode does not call generation. Settings credentials are write-only Fernet ciphertext bound to their assistant ID. The server master key must be retained separately from the database. Deployment-default keys in `.env` remain server secrets and are not database-encrypted. Provider credentials never enter published content versions or assistant exports.
+
+Custom inference endpoints require exact operator approval, have no URL user info/query/fragment, and never receive redirected credentials. Clients ignore environment proxies. Preset endpoints are fixed. This is a narrowly scoped inference adapter, not unrestricted user HTTP access. Responses and SSE parsing are bounded; provider error bodies, keys and thinking deltas are not returned to clients. Configured status is metadata only; explicit test requests can incur provider charges. Full provider privacy/compliance assessment and live-account acceptance remain the deployment operator's responsibility.
