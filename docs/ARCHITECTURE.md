@@ -1,6 +1,6 @@
 # Architecture and data flow
 
-One FastAPI application owns authentication, tenant policy, knowledge, chat and bookings. One Python worker leases database jobs for extraction and delivers in-app reminders. React/TypeScript and the iframe widget are clients of the same application API. Ollama stays behind the application boundary. PostgreSQL is the Compose target; SQLite is the verified native profile. No Redis, vector database, Kubernetes or microservice fleet is required.
+One FastAPI application owns authentication, tenant policy, knowledge, chat and bookings. One Python worker leases database jobs for extraction and delivers in-app reminders. React/TypeScript and the iframe widget are clients of the same application API. Ollama stays behind the application boundary. PostgreSQL is the Compose target and its backend suite passed in CI; SQLite is the verified native profile. No Redis, vector database, Kubernetes or microservice fleet is required.
 
 ## Boundaries
 

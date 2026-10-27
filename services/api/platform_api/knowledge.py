@@ -67,10 +67,18 @@ def citations(db, ids, assistant_id):
         .join(Document)
         .where(Chunk.id.in_(ids), Document.assistant_id == assistant_id, Document.status == "ready")
     )
-    return [
-        {"chunk_id": c.id, "document_id": d.id, "title": d.title, "page": c.page, "text": c.text}
+    by_id = {
+        c.id: {
+            "chunk_id": c.id,
+            "document_id": d.id,
+            "title": d.title,
+            "page": c.page,
+            "text": c.text,
+        }
         for c, d in rows
-    ]
+    }
+    # SQL IN does not preserve retrieval order; citation numbers must match the answer.
+    return [by_id[chunk_id] for chunk_id in ids if chunk_id in by_id]
 
 
 class ChatInput(BaseModel):

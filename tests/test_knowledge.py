@@ -174,3 +174,27 @@ def test_docx_csv_and_exhausted_job_budget(setup):
         if d["id"] == response.json()["id"]
     )
     assert document["status"] == "failed" and "retry budget" in document["error"]
+
+
+def test_citation_numbering_preserves_retrieval_order(setup):
+    client, app = setup
+    headers = auth(client)
+    assistant = bot_id(client, headers)
+    upload_ready(
+        client, app, headers, assistant, "Bicycle warranty lasts twelve months.", "terms.txt"
+    )
+    upload_ready(
+        client,
+        app,
+        headers,
+        assistant,
+        "Warranty warranty warranty warranty details.",
+        "warranty.txt",
+    )
+    root = f"/v1/assistants/{assistant}"
+    expected = client.get(root + "/search?q=warranty", headers=headers).json()["items"]
+    assert len(expected) == 2
+    result = client.post(root + "/chat", headers=headers, json={"text": "warranty"}).json()
+    assert [c["chunk_id"] for c in result["citations"]] == [c["chunk_id"] for c in expected]
+    for index, chunk in enumerate(result["citations"], 1):
+        assert f"[{index}] {chunk['text']}" in result["text"]

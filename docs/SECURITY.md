@@ -9,7 +9,7 @@ This development preview should use synthetic data on loopback. It is not a publ
 | Password guessing | Durable atomic global 20-attempt/minute budget; dummy password verification | Per-account/IP limits, proxy trust; global budget is susceptible to denial of service |
 | Upload bombs | 2 MB read cap, extension and content checks, subprocess timeout; Unix resource budgets; DOCX expansion limits | Total multipart body limits at proxy, sandbox hardening; Windows lacks Unix resource limits |
 | Document prompt injection | No generated tool execution, no arbitrary HTTP/SQL/shell, quoted source mode, model boundaries | Broader adversarial/model evaluation; no prompt-only guarantee |
-| Race/duplicate actions | User-bound immutable proposals, expiry, database reservation uniqueness, atomic transactions, versioned approvals | Multi-resource capacity and PostgreSQL acceptance |
+| Race/duplicate actions | User-bound immutable proposals, expiry, database reservation uniqueness, atomic transactions, versioned approvals | Multi-resource capacity; PostgreSQL backend suite passed in CI |
 | Stale citation content | Live source scope checks, source deletion and transcript redaction | Browser/downloaded copies and backups cannot be recalled |
 | Model exhaustion | Single completion gate per API process, bounded context/output and total deadline | Deployment-wide admission/quotas and fair queuing |
 | UI injection | React text rendering, no untrusted HTML/Markdown execution, static loader with no message bridge | Browser acceptance, CSP hardening and host identity |
