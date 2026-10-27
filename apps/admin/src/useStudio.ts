@@ -191,6 +191,21 @@ export function useStudio() {
     };
   }, [assistant]);
   useEffect(() => {
+    if (!project || !token || tab !== "Appointments") return;
+    let active = true;
+    client
+      .request<{ items: Booking[] }>(api("/bookings"))
+      .then((result) => {
+        if (active) setBookings(result.items);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [tab, project, token]);
+  useEffect(() => {
     chatEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
   async function login(e: React.FormEvent) {

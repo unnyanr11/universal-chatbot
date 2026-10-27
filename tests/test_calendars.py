@@ -117,3 +117,61 @@ def test_generated_slots_skip_ambiguous_times_inside_opening_period(setup, monke
         for slot in db.scalars(select(Slot).where(Slot.service_id == service)):
             local = datetime.fromtimestamp(slot.start_at, ZoneInfo("America/New_York"))
             assert local.hour != 1
+
+
+def test_postgres_confirmation_rechecks_policy_after_waiting_for_staff_guard(setup):
+    import threading
+
+    import pytest
+    from platform_api.database import ServicePolicy, Staff
+    from sqlalchemy import event, update
+
+    client, app = setup
+    if app.state.engine.dialect.name != "postgresql":
+        pytest.skip("PostgreSQL MVCC/row-lock regression; SQLite serializes the earlier write")
+    h = auth(client)
+    root = "/v1/projects/cedar"
+    staff = client.post(
+        root + "/staff", headers=h, json={"name": "Policy guard technician"}
+    ).json()["id"]
+    service = client.post(
+        root + "/services", headers=h, json={"name": "Guarded service", "staff_id": staff}
+    ).json()["id"]
+    day = datetime.now(ZoneInfo("Asia/Kolkata")).date() + timedelta(days=1)
+    while day.weekday() >= 5:
+        day += timedelta(days=1)
+    client.post(
+        root + f"/services/{service}/generate-slots",
+        headers=h,
+        json={"start_date": day.isoformat(), "days": 1},
+    )
+    slot = client.get(root + f"/services/{service}/slots", headers=h).json()["items"][0]["slot_id"]
+    pending = proposal(client, h, slot, "policy-guard-race")
+    waiting = threading.Event()
+
+    def observe(conn, cursor, statement, parameters, context, executemany):
+        if statement.startswith("UPDATE staff "):
+            waiting.set()
+
+    def confirm_parallel():
+        with TestClient(app) as parallel:
+            return confirm(parallel, h, pending)
+
+    with app.state.sessions() as locker, ThreadPoolExecutor(1) as pool:
+        locker.execute(update(Staff).where(Staff.id == staff).values(name=Staff.name))
+        locker.execute(
+            update(ServicePolicy).where(ServicePolicy.service_id == service).values(revision=2)
+        )
+        event.listen(app.state.engine, "before_cursor_execute", observe)
+        try:
+            future = pool.submit(confirm_parallel)
+            assert waiting.wait(10), "Confirmation did not reach the guarded policy check"
+            locker.commit()
+            result = future.result(timeout=10)
+            assert (
+                result["state"] == "failed"
+                and result["error"] == "CALENDAR_POLICY_CHANGED_REVIEW_AGAIN"
+            )
+        finally:
+            locker.rollback()
+            event.remove(app.state.engine, "before_cursor_execute", observe)

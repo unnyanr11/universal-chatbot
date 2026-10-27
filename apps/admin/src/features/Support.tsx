@@ -70,17 +70,19 @@ export function Support({ project }: { project: string }) {
           <>
             <h2>{ticket.subject}</h2>
             <span className="badge">{ticket.state}</span>
-            <div className="button-row">
-              <button disabled={job.busy} onClick={() => state("claim")}>
-                Claim conversation
-              </button>
-              <button disabled={job.busy} onClick={() => state("resume")}>
-                Return to assistant
-              </button>
-              <button disabled={job.busy} onClick={() => state("resolve")}>
-                Resolve ticket
-              </button>
-            </div>
+            {ticket.notes !== undefined && (
+              <div className="button-row">
+                <button disabled={job.busy} onClick={() => state("claim")}>
+                  Claim conversation
+                </button>
+                <button disabled={job.busy} onClick={() => state("resume")}>
+                  Return to assistant
+                </button>
+                <button disabled={job.busy} onClick={() => state("resolve")}>
+                  Resolve ticket
+                </button>
+              </div>
+            )}
             <div className="ticket-messages">
               {ticket.messages.map((m, i) => (
                 <article className={"message " + m.role} key={i}>

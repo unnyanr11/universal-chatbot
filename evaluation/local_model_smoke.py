@@ -73,6 +73,40 @@ async def main():
             assert db.scalar(select(Document.status)) == "ready"
             hits = await semantic_retrieve(db, "demo", "cycle maintenance", "semantic", [])
             assert hits and hits[0]["document_id"] == "demo"
+        from fastapi.testclient import TestClient
+        from platform_api.app import create_app, passwords
+        from platform_api.database import Membership, User
+
+        with sessions.begin() as db:
+            user = User(
+                email="runtime@example.test",
+                password_hash=passwords.hash("synthetic-runtime-password"),
+            )
+            db.add(user)
+            db.flush()
+            db.add(Membership(user_id=user.id, organization_id="demo", role="owner"))
+        api = create_app(url, provider=provider)
+        with TestClient(api) as client:
+            login = client.post(
+                "/v1/sessions",
+                json={"email": "runtime@example.test", "password": "synthetic-runtime-password"},
+            )
+            assert login.status_code == 201
+            response = client.post(
+                "/v1/assistants/demo/chat",
+                headers={
+                    "Authorization": "Bearer " + login.json()["access_token"],
+                    "Accept": "text/event-stream",
+                },
+                json={"text": "cycle maintenance", "mode": "local"},
+            )
+            assert (
+                response.status_code == 200
+                and "event: token" in response.text
+                and "event: result" in response.text
+            )
+            report["authenticated_api_stream"] = "passed (runtime path, not answer-quality grading)"
+        api.state.engine.dispose()
         engine.dispose()
     print(json.dumps(report, indent=2))
 

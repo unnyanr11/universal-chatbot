@@ -420,6 +420,12 @@ def test_chat_actions_collect_details_and_require_authoritative_confirmation(set
     op = proposed.json()
     confirmed = client.post(root + f"/operations/{op['id']}/confirm", headers=h).json()
     assert confirmed["state"] == "succeeded"
+    status = client.post(bot + "/chat", headers=h, json={"text": "Show my bookings"}).json()
+    assert status["mode"] == "tool_result" and confirmed["booking_id"] in status["text"]
+    other_status = client.post(
+        bot + "/chat", headers=other, json={"text": "Show my bookings"}
+    ).json()
+    assert confirmed["booking_id"] not in other_status["text"]
     assert (
         client.post(action + "/propose", headers=h, json={"slot_id": "slot-0"}).json()["booking_id"]
         == confirmed["booking_id"]

@@ -194,6 +194,7 @@ export function Privacy({
                 method: "DELETE",
                 body: JSON.stringify({ confirmation }),
               });
+              onErased?.();
               setConfirmation("");
               setTick((v) => v + 1);
             });

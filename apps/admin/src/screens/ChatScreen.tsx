@@ -88,13 +88,17 @@ export function ChatScreen({ studio }: { studio: StudioState }) {
               <small>
                 {m.role === "user"
                   ? "YOU"
-                  : m.role === "human"
-                    ? "HUMAN AGENT"
-                    : m.provisional
-                      ? "AI TEXT · PROVISIONAL"
-                      : m.mode === "extractive"
-                        ? "SOURCE PASSAGES"
-                        : "ASSISTANT · CHECK SOURCES"}
+                  : m.role === "tool" || m.mode === "tool_result"
+                    ? "BOOKING SERVICE · VERIFIED RESULT"
+                    : m.action
+                      ? "ACTION FORM · CONFIRMATION REQUIRED"
+                      : m.role === "human"
+                        ? "HUMAN AGENT"
+                        : m.provisional
+                          ? "AI TEXT · PROVISIONAL"
+                          : m.mode === "extractive"
+                            ? "SOURCE PASSAGES"
+                            : "ASSISTANT · CHECK SOURCES"}
               </small>
               <p>{m.text}</p>
               {m.action && (

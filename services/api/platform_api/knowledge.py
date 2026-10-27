@@ -358,8 +358,14 @@ async def chat(
             "mode": "handoff",
             "generation_streaming": False,
         }
-    from .chat_actions import create_card, intent
+    from .chat_actions import booking_query, booking_status, create_card, intent
 
+    if booking_query(body.text) and not intent(body.text):
+        from .database import Project
+
+        return booking_status(
+            db, conversation_id, db.get(Project, scope[0].project_id), scope[1], session, body.text
+        )
     requested_action = intent(body.text)
     if requested_action:
         return create_card(

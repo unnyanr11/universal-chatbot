@@ -1,6 +1,8 @@
 """Server-created chat controls. Generated text can neither manufacture nor execute them."""
 
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -126,3 +128,37 @@ def propose(
     action.operation_id = result["id"]
     db.commit()
     return result
+
+
+def booking_query(text):
+    return bool(
+        re.search(
+            r"\b(?:my\s+(?:appointments?|bookings?)|(?:appointment|booking)\s+(?:status|reference))\b",
+            text.lower(),
+        )
+    )
+
+
+def booking_status(db, conversation_id, project, member, session, text):
+    rows = booking.bookings((project, member), session, db)["items"]
+    lines = []
+    for row in rows:
+        local = datetime.fromisoformat(row["start_at"]).astimezone(ZoneInfo(row["timezone"]))
+        lines.append(
+            f"{row['service']} — {row['status']} — {local.isoformat()} ({row['timezone']}) — reference {row['id']}"
+        )
+    answer = (
+        "Your stored appointments:\n" + "\n".join(lines)
+        if lines
+        else "You have no stored appointments in this workspace."
+    )
+    db.add(Message(conversation_id=conversation_id, role="user", text=text))
+    db.add(Message(conversation_id=conversation_id, role="tool", text=answer))
+    db.commit()
+    return {
+        "conversation_id": conversation_id,
+        "text": answer,
+        "citations": [],
+        "mode": "tool_result",
+        "generation_streaming": False,
+    }

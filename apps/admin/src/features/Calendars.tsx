@@ -238,6 +238,7 @@ export function Calendars({
               <label>
                 Policy JSON
                 <textarea
+                  aria-label="Policy JSON"
                   className="policy-editor"
                   value={policyText}
                   onChange={(e) => setPolicyText(e.target.value)}

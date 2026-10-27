@@ -80,6 +80,9 @@ def receipt(db, op):
     if binding:
         cutoff = preview["policy"]["cancellation_cutoff_minutes"]
         policy_text = f"Cancel or reschedule at least {cutoff} minutes before the appointment. Preview does not reserve capacity."
+        if op.kind == "reschedule":
+            original_cutoff = preview.get("source_cancellation_cutoff_minutes", 0)
+            policy_text = f"Original appointment change cutoff: {original_cutoff} minutes. New appointment cancellation cutoff: {cutoff} minutes. Preview does not reserve capacity."
     return {
         "id": op.id,
         "kind": op.kind,

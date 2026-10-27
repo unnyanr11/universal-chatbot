@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .context import database, project_scope, require_writer
 from .database import (
+    Booking,
     OperationPolicy,
     ResourceReservation,
     Service,
@@ -96,15 +97,13 @@ def service_policy(db, slot):
     )
 
 
-def eligible(db, slot, exclude_booking="", lock=False):
+def eligible(db, slot, exclude_booking=""):
     binding = db.get(SlotResource, slot.id)
     policy, config = service_policy(db, slot)
     if not policy or not binding:
         return not policy  # Legacy fixed slots retain their original per-slot capacity.
     if binding.policy_revision != policy.revision:
         return False
-    if lock:
-        db.execute(update(Staff).where(Staff.id == binding.staff_id).values(name=Staff.name))
     start = slot.start_at - config.buffer_before_minutes * 60
     end = slot.end_at + config.buffer_after_minutes * 60
     overlap = db.scalar(
@@ -120,36 +119,71 @@ def eligible(db, slot, exclude_booking="", lock=False):
     return overlap is None
 
 
+def source_policy(db, operation):
+    if operation.kind == "book" or not operation.booking_id:
+        return None
+    booking = db.get(Booking, operation.booking_id)
+    original = db.get(Slot, booking.slot_id) if booking else None
+    return db.get(ServicePolicy, original.service_id) if original else None
+
+
+def lock_policies(db, policies):
+    policies = {policy.service_id: policy for policy in policies if policy}
+    # Consistent order avoids cross-staff rescheduling deadlocks. The same guard is
+    # used by edits/generation, so refresh after waiting before approving any write.
+    for staff_id in sorted({policy.staff_id for policy in policies.values()}):
+        db.execute(update(Staff).where(Staff.id == staff_id).values(name=Staff.name))
+    for policy in policies.values():
+        db.refresh(policy)
+
+
 def bind_operation(db, operation, preview):
     slot = db.get(Slot, operation.slot_id)
     policy, config = service_policy(db, slot)
-    if policy:
-        if not eligible(db, slot, operation.booking_id) and operation.kind != "cancel":
+    original = source_policy(db, operation)
+    if policy or original:
+        if operation.kind != "cancel" and not eligible(db, slot, operation.booking_id):
             raise HTTPException(409, "STAFF_CAPACITY_UNAVAILABLE")
         details = {
             **preview,
             "policy": config.model_dump(mode="json"),
-            "staff": db.get(Staff, policy.staff_id).name,
+            "source_policy_revision": original.revision if original else 0,
+            "source_cancellation_cutoff_minutes": Policy.model_validate_json(
+                original.configuration
+            ).cancellation_cutoff_minutes
+            if original
+            else 0,
         }
         db.add(
             OperationPolicy(
-                operation_id=operation.id, revision=policy.revision, preview=json.dumps(details)
+                operation_id=operation.id,
+                revision=policy.revision if policy else 0,
+                preview=json.dumps(details),
             )
         )
 
 
 def revalidate_operation(db, operation, slot):
+    policy, _ = service_policy(db, slot)
+    original = source_policy(db, operation)
+    lock_policies(db, [policy, original])
     policy, config = service_policy(db, slot)
     binding = db.get(OperationPolicy, operation.id)
-    if policy and (not binding or binding.revision != policy.revision):
-        raise ValueError("CALENDAR_POLICY_CHANGED_REVIEW_AGAIN")
+    if policy or original:
+        snapshot = json.loads(binding.preview) if binding else {}
+        if (
+            not binding
+            or binding.revision != (policy.revision if policy else 0)
+            or snapshot.get("source_policy_revision", 0) != (original.revision if original else 0)
+        ):
+            raise ValueError("CALENDAR_POLICY_CHANGED_REVIEW_AGAIN")
     lead = config.lead_time_minutes * 60 if policy else 3600
     if operation.kind != "cancel":
         if slot.start_at <= time.time() + lead:
             raise ValueError("LEAD_TIME_REQUIRED")
         if policy and slot.start_at > time.time() + config.booking_window_days * 86400:
             raise ValueError("OUTSIDE_BOOKING_WINDOW")
-        if not eligible(db, slot, operation.booking_id, lock=True):
+        if not eligible(db, slot, operation.booking_id):
             raise ValueError("STAFF_CAPACITY_UNAVAILABLE")
 
 
@@ -239,6 +273,10 @@ def update_policy(
 ):
     require_writer(scope)
     service = scoped_service(db, service_id, scope[0].id)
+    current = db.get(ServicePolicy, service.id)
+    if not current:
+        raise HTTPException(409, "CREATE_A_MANAGED_SERVICE_FIRST")
+    lock_policies(db, [current])
     changed = db.execute(
         update(ServicePolicy)
         .where(ServicePolicy.service_id == service.id, ServicePolicy.revision == body.revision)
@@ -270,6 +308,7 @@ def generate_slots(
     policy = db.get(ServicePolicy, service.id)
     if not policy:
         raise HTTPException(409, "CREATE_A_MANAGED_SERVICE_FIRST")
+    lock_policies(db, [policy])
     config, zone = Policy.model_validate_json(policy.configuration), ZoneInfo(service.timezone)
     today = datetime.now(zone).date()
     if body.start_date < today or body.start_date + timedelta(days=body.days) > today + timedelta(

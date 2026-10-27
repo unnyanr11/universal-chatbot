@@ -159,4 +159,11 @@ test("booking can be completed inside the chat with a server-owned action card",
     .click();
   await expect(card.locator(".badge")).toHaveText("succeeded");
   await expect(card).toContainText("Reference:");
+  const reference = (await card.getByText(/^Reference:/).textContent())!
+    .replace("Reference: ", "")
+    .slice(0, 8);
+  await page.getByRole("button", { name: "Appointments", exact: true }).click();
+  await expect(
+    page.locator(".booking-row").filter({ hasText: reference }),
+  ).toContainText("confirmed");
 });
