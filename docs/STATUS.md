@@ -4,7 +4,7 @@ The working local release is distinct from optional enterprise/provider features
 
 | Area | Implemented | Boundary |
 |---|---|---|
-| Local operation | Native Python/Node and Docker Compose with PostgreSQL, API, worker, Ollama | No mandatory paid API; model downloads/storage/electricity still apply |
+| Local operation | Guided installer, native Python/Node and Docker Compose with PostgreSQL, API, worker, Ollama; optional Caddy HTTPS | No mandatory paid API; model downloads/storage/electricity still apply |
 | Tenants and onboarding | Organisations, projects, owner onboarding/bootstrap, assistants, membership-scoped routes | Project visibility is organisation-wide; use separate deployments/credentials for separate environments |
 | Identity | Argon2, hashed one-hour opaque sessions, logout/all-session revoke, password change, invitation links, membership removal, last-owner guard | Invitations are local links; no real email or SSO; no account recovery provider |
 | Admin and widget | React Studio screens, authenticated lazy iframe widget, configurable branding/welcome/questions, embedding CSP allowlist | No anonymous guest identity or signed host identity; no arbitrary postMessage bridge |

@@ -82,13 +82,12 @@ jobs:
           docker exec model-smoke ollama pull all-minilm:latest
       - run: python evaluation/local_model_smoke.py
       - run: docker rm -f model-smoke
-      - run: docker compose up --build -d
-      - run: |
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:8000/health; then break; fi
-            sleep 1
-          done
-          curl --fail http://127.0.0.1:8000/
-          docker compose run --rm -e DEMO_PASSWORD=synthetic-ci-seed-password api python -m platform_api.seed
+      - name: First-run installer with actual local models
+        run: |
+          printf '%s\n' 'synthetic-installer-owner-password' | python scripts/setup.py --domain '' --owner-email owner@setup.example.test --organization 'Installer test' --password-stdin --no-browser
+      - name: Installer rerun preserves existing accounts and database credentials
+        run: python scripts/setup.py --no-browser
+      - name: Validate HTTPS proxy configuration
+        run: docker run --rm -e APP_DOMAIN=chat.example.test -v "$PWD/infra/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - if: always()
         run: docker compose logs --tail=60 && docker compose down -v

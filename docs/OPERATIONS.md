@@ -35,3 +35,11 @@ Changing a managed service policy invalidates pending approvals and old availabi
 Use `python -m platform_api.bootstrap` for the first non-demo owner in an empty database. The Team screen creates local one-time invitation links, not email delivery. The Privacy screen supports password rotation and all-session logout; account recovery requires an operator procedure and is not an automated email/SMS feature.
 
 CI has verified the Compose stack and real local model runtime; see VERIFICATION.md and BENCHMARKS.md. Those measurements are CPU smoke observations, not minimum hardware or uptime guarantees. Store model volumes separately from protected data backups if desired; source bytes/embeddings and user records live in the relational database.
+
+## Guided installer
+
+`python3 scripts/setup.py` configures and checks the local Docker stack. It generates `.env` with restrictive file permissions on Unix, preserves existing database passwords, creates the first owner/assistant and a product guide, and pulls the configured local models. Rerunning resumes setup without creating demo identities or rotating existing account credentials. Do not remove `.env` while retaining an existing PostgreSQL volume: the database keeps its original password. Restore the original `.env` from protected backup if lost; generating a new password does not change an existing database's password.
+
+The public-domain option adds `compose.public.yaml` and Caddy. DNS and inbound TCP ports 80/443 must already reach the server. Setup verifies public HTTPS before declaring completion. Caddy certificate state is persisted in the `certificates` volume. Localhost remains the default. Restarting a domain installation manually requires both compose files: `docker compose -f compose.yaml -f compose.public.yaml up -d`. For logs use the same files with `logs --tail=100`; never post `.env` or owner credentials in support messages.
+
+The installer checks real model completion, embedding generation and newly created guide ingestion. It does not certify model answer quality or configure external providers, mail delivery, DNS or real business staff/policies. See STATUS.md for those boundaries. Public TLS issuance is conditional on the operator's domain; CI validates Caddy configuration, while actual certificates are checked by the installer at deployment time.

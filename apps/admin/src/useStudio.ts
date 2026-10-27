@@ -24,7 +24,7 @@ export function useStudio() {
   }>();
   const [retrieval, setRetrieval] = useState("lexical");
   const [token, setToken] = useState(""),
-    [email, setEmail] = useState("owner@cedar.example"),
+    [email, setEmail] = useState(""),
     [password, setPassword] = useState("");
   const [projects, setProjects] = useState<Project[]>([]),
     [project, setProject] = useState("");
@@ -120,7 +120,11 @@ export function useStudio() {
       .catch((e) => setError(e.message));
     client
       .request<{ status: string }>("/v1/provider")
-      .then((r) => setProvider(r.status))
+      .then((r) => {
+        if (!active) return;
+        setProvider(r.status);
+        if (r.status === "available") setMode("local");
+      })
       .catch(() => setProvider("unavailable"));
     return () => {
       active = false;

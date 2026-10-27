@@ -18,6 +18,32 @@ A self-hostable, local-first assistant platform with a React admin application, 
 
 Source-passage mode is a non-generative baseline: it quotes retrieved passages and does not pretend to be model inference. Generated text cannot create controls, manufacture tool results or execute actions.
 
+## Ready-to-use setup (recommended)
+
+Install **Docker with Compose v2**, **Git** and **Python 3.10+**. Start Docker, then run:
+
+```bash
+git clone https://github.com/unnyanr11/universal-chatbot.git
+cd universal-chatbot
+python3 scripts/setup.py
+```
+
+On Windows use `python scripts/setup.py`. Already cloned? Run `git pull` first, then the setup command.
+
+The wizard asks for a domain (blank means localhost), your owner email, organisation and a password. It generates a private database password, builds the application, runs migrations, downloads the starter local generation/embedding models, creates your account and assistant, and indexes a product getting-started guide. It tests actual model completion, embeddings, the worker, database and UI before reporting success. Your account password is sent over stdin, never saved in `.env` or command arguments. Rerunning preserves existing accounts, database credentials and data; it resumes interrupted setup rather than resetting the installation.
+
+Open the URL printed by setup and sign in with **your chosen owner email/password**. Local model mode is selected automatically when the provider is available. Ask **“How do I upload my business documents?”** to test the starter guide, then add your own approved documents in Knowledge. The guide describes this product; it does not supply fictional business policies, staff or availability. Add your real services and staff in Calendars before testing bookings.
+
+The starter profile uses `smollm2:360m` and `all-minilm:latest`; it is a small CPU profile verified by runtime smoke tests, not a business-answer quality guarantee. Downloads and builds require internet, storage and time. To explicitly start without AI/model downloads, use `python3 scripts/setup.py --source-only` (source-passage answers). To use another installed/reviewed model, set its exact tag in the generated `.env` and rerun setup; the installer preserves nonempty model tags.
+
+### Public HTTPS hosting
+
+Run the same wizard **on your server** and enter a domain such as `chat.example.com`. Point the domain's DNS to that server first and permit inbound **TCP 80/443** (and UDP 443 if using HTTP/3). The installer starts Caddy with automatic HTTPS, keeps database/Ollama ports private, and waits for the public HTTPS health check. It reports a failure rather than claiming readiness when DNS, certificate issuance or routing fails. No domain is purchased or DNS changed automatically. Keep the server's firewall and DNS under your control.
+
+For a local-only server test, keep the domain blank and connect from your computer with `ssh -L 8000:127.0.0.1:8000 user@server`, then visit `http://localhost:8000`.
+
+For unattended setup, use `--domain`, `--owner-email`, `--organization`, `--password-stdin` and `--no-browser`; supply the password through a protected stdin source. Use `--port 8001` if localhost port 8000 is already occupied. Existing accounts are never silently reset. Keep `.env` private and back up the database before upgrading an existing installation.
+
 ## Native setup
 
 Requires Python 3.12 and Node.js 22.12+ or 24. From the repository root:
@@ -37,7 +63,7 @@ python -m platform_api.migrate
 Choose **one** initial account path:
 
 - **Synthetic demo:** set `DEMO_PASSWORD` to a unique random password of at least 16 characters, then run `python -m platform_api.seed`. PowerShell: `$env:DEMO_PASSWORD = "your-unique-random-password"`; Bash: `export DEMO_PASSWORD='your-unique-random-password'`.
-- **Empty account database:** run `python -m platform_api.bootstrap` and enter the owner email, organisation and password interactively. No demo accounts are added. Bootstrap refuses a database that already contains users.
+- **Empty account database:** run `python -m platform_api.bootstrap` and enter the owner email, organisation and password interactively. It creates an assistant and queued getting-started guide. No demo accounts are added; existing accounts are preserved.
 
 Build the UI and start the application:
 

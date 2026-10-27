@@ -1,0 +1,21 @@
+# Used automatically by scripts/setup.py when a public domain is configured.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set a public domain}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  certificates:
+  caddy_config:

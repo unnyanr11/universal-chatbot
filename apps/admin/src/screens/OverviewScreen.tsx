@@ -48,8 +48,14 @@ export function OverviewScreen({ studio }: { studio: StudioState }) {
         </article>
         <article>
           <span>Answer mode</span>
-          <strong className="word">Source passages</strong>
-          <small>Extractive baseline · No inference needed</small>
+          <strong className="word">
+            {mode === "local" ? "Local model" : "Source passages"}
+          </strong>
+          <small>
+            {mode === "local"
+              ? "Ollama · Answers grounded in your sources"
+              : "Extractive baseline · No inference needed"}
+          </small>
         </article>
       </div>
       <section className="panel">

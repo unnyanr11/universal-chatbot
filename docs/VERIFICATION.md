@@ -25,3 +25,7 @@ These are runtime checks, not answer-quality, production-capacity or security-ce
 Dependency audit: Vite was upgraded to 7.3.7 after an initial high-severity development-server finding. Subsequent npm audit reported zero vulnerabilities in the locked JS dependency tree at that time. This does not cover Python packages, model weights or application logic. A broader security review, transitive licence inventory, model-answer quality study and production load testing remain outside these acceptance checks.
 
 Known dependency warning: the pinned Starlette TestClient bridge reports its httpx integration deprecated in favour of httpx2. The bridge still passes the suite; migrate it before an upgrade removes compatibility.
+
+## Guided installer extension
+
+The installer adds real-model downloads, generated database credentials, first-owner/assistant creation, worker/index readiness and optional Caddy HTTPS. Local checks passed 35 backend tests with one PostgreSQL-specific skip, frontend production build, Python lint/format and frontend formatting. First-install/rerun acceptance with Docker and Caddy configuration validation is included in the updated CI workflow; its result will be recorded after the source run completes. Public certificate issuance requires the operator's domain and is checked by setup on the destination server.

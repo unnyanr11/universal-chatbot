@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+    restart: unless-stopped
     environment:
       POSTGRES_DB: assistant
       POSTGRES_USER: assistant
@@ -31,8 +32,14 @@ services:
       context: .
       dockerfile: infra/Dockerfile
     environment: *api-env
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 5s
+      timeout: 6s
+      retries: 30
     ports:
-      - 127.0.0.1:8000:8000
+      - 127.0.0.1:${APP_PORT:-8000}:8000
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -48,6 +55,7 @@ services:
     restart: unless-stopped
   ollama:
     image: ollama/ollama:0.11.4
+    restart: unless-stopped
     volumes:
       - models:/root/.ollama
     # Intentionally no host port; inference is not a public API.

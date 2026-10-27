@@ -15,3 +15,5 @@ services/api/platform_api/web/demo-embed.html
 services/api/platform_api/web/demo-embed.js
 apps/admin/test-results/
 apps/admin/playwright-report/
+
+.env-*

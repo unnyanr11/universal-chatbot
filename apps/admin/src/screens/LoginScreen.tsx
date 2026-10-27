@@ -38,7 +38,8 @@ export function LoginScreen({ studio }: { studio: StudioState }) {
         <span className="eyebrow">WELCOME TO YOUR WORKSPACE</span>
         <h2>Sign in to Studio</h2>
         <p className="muted">
-          Use an account created by your local seed command.
+          Use the owner account created during setup, or an account invited by
+          your team.
         </p>
         <label>
           Email
@@ -69,7 +70,7 @@ export function LoginScreen({ studio }: { studio: StudioState }) {
           {busy ? "Signing in…" : "Open workspace →"}
         </button>
         <p className="fine">
-          Development preview · Synthetic sample businesses
+          Your workspace · Your business information
           <br />
           Tokens stay in memory. Reloading requires sign-in.
         </p>
