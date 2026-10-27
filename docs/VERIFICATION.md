@@ -1,22 +1,26 @@
 # Verification — 27 October 2026
 
-## Observed baseline extension
+## Verified source
 
-GitHub run https://github.com/unnyanr11/universal-chatbot/actions/runs/40482903584 passed all three jobs:
+Source commit `3df2ccd28b83a034a1c521f4708a858e79ee7108` passed GitHub run https://github.com/unnyanr11/universal-chatbot/actions/runs/40491072791. This document is a subsequent documentation-only update; the linked run identifies the exact tested code.
 
-- Python backend suite against SQLite and PostgreSQL 17, including tenant isolation, source deletion/redaction, publish/rollback pinning, tool boundaries, owned conversations, handoff privacy, workspace erasure, consent, membership/session controls, workflow dry-run/version/recovery and concurrent booking invariants.
-- React/TypeScript production build, reusable React component type check, Python lint/format and synthetic retrieval evaluation.
-- Four real Playwright browser journeys: sourced chat and booking/cancellation; authenticated iframe chat; configuration publication and workflow simulation; human handoff/private notes and customer workspace erasure.
-- Actual Ollama completion and token streaming for two local model configurations, all-minilm embeddings, worker indexing and semantic retrieval. These are real runtime calls, separate from test doubles.
-- Full Docker Compose build/start, compiled UI delivery and PostgreSQL seed using the built image.
+| Check | Observed result |
+|---|---|
+| SQLite backend | 33 passed, 1 PostgreSQL-specific test skipped |
+| PostgreSQL 17 backend | 34 passed |
+| Chromium acceptance | All 6 Playwright journeys passed |
+| Frontend and clients | React/TypeScript production build and reusable React component type check passed |
+| Python hygiene | Ruff lint and format checks passed |
+| Synthetic retrieval | All 3 evaluation cases passed |
+| Actual local models | SmolLM2 135m and 360m completion/token streaming passed; authenticated API SSE path passed |
+| Semantic ingestion | Actual all-minilm embeddings, durable worker indexing and semantic retrieval passed |
+| Docker Compose | Full image build/start, compiled UI delivery, health check and PostgreSQL seed passed |
 
-See BENCHMARKS.md for the exact observed smoke measurements and their limits.
+Backend checks cover tenant isolation, source deletion/redaction, publish/rollback pinning, tool boundaries, owned conversations, handoff privacy, workspace erasure, consent, membership/session controls, workflow dry-run/version/recovery and concurrent booking invariants. Calendar coverage includes shared staff capacity across services, policy invalidation of pending approval, DST ambiguity rejection and a PostgreSQL policy-edit/confirmation race. Request bounds cover declared and chunked payloads before parsing.
 
-## Current calendar/tool hardening
+The six browser journeys exercise sourced chat and booking/cancellation; authenticated iframe chat; configuration publication and workflow simulation; human handoff/private notes and customer erasure; managed calendars and booking; and server-owned in-chat booking cards with cross-view booking refresh.
 
-The local suite additionally exercises shared staff capacity across different services, calendar-policy invalidation of pending approval, DST ambiguity rejection, schema-validated local tool calls, pre-parser/chunked request bounds and citation ordering. Its final source/test count and CI result will be recorded after the current commit is checked. Adding tests does not itself establish that they passed in every environment.
-
-The frontend production build and source formatting are checked after each UI change. The authoring environment cannot run Chromium directly because downloaded archives were invalid; browser acceptance uses CI. The Expo example has no device/emulator acceptance and is not a shipped native app. No screenshot or pixel-level visual review claim is made.
+These are runtime checks, not answer-quality, production-capacity or security-certification claims. See BENCHMARKS.md for measured model smoke observations and their limits. The authoring environment could not run Chromium directly because downloaded archives were invalid; browser acceptance ran in CI. No screenshot or pixel-level visual review claim is made. The Expo example has no device/emulator acceptance and is not a shipped native app. Optional unimplemented adapters are listed in STATUS.md.
 
 Dependency audit: Vite was upgraded to 7.3.7 after an initial high-severity development-server finding. Subsequent npm audit reported zero vulnerabilities in the locked JS dependency tree at that time. This does not cover Python packages, model weights or application logic. A broader security review, transitive licence inventory, model-answer quality study and production load testing remain outside these acceptance checks.
 
