@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: assistant
+      POSTGRES_USER: assistant
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a unique POSTGRES_PASSWORD}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U assistant -d assistant]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+    environment: &api-env
+      DATABASE_URL: postgresql+psycopg://assistant:${POSTGRES_PASSWORD}@db/assistant
+      APP_ENV: development
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+    command: [python, -m, platform_api.migrate]
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+    environment: *api-env
+    ports:
+      - 127.0.0.1:8000:8000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  ollama:
+    image: ollama/ollama:0.11.4
+    volumes:
+      - models:/root/.ollama
+    # Intentionally no host port; inference is not a public API.
+volumes:
+  database:
+  models:
