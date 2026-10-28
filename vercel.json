@@ -23,7 +23,7 @@
       "buildCommand": "npm run build -- --base=/admin/ --outDir=dist",
       "outputDirectory": "dist",
       "rewrites": [
-        { "source": "/admin/:path*", "destination": "/:path*" }
+        { "source": "/(.*)", "destination": "/index.html" }
       ],
       "headers": [
         {
@@ -45,8 +45,7 @@
     }
   },
   "rewrites": [
-    { "source": "/admin", "destination": { "service": "admin" } },
-    { "source": "/admin/(.*)", "destination": { "service": "admin" } },
+    { "source": "/admin/:path*", "destination": { "service": "admin", "path": "/:path*" } },
     { "source": "/widget-loader.js", "destination": { "service": "admin" } },
     { "source": "/demo-embed.js", "destination": { "service": "admin" } },
     { "source": "/(.*)", "destination": { "service": "app" } }

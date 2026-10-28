@@ -10,7 +10,7 @@ def mount_frontend(app, base_url):
     async def page(filename):
         try:
             async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
-                response = await client.get(base_url.rstrip("/") + "/admin/" + filename)
+                response = await client.get(base_url.rstrip("/") + "/" + filename)
             if response.status_code != 200:
                 raise HTTPException(503, "FRONTEND_UNAVAILABLE")
         except httpx.HTTPError:

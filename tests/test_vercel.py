@@ -45,7 +45,7 @@ def test_bound_frontend_preserves_policy_without_forwarding_credentials(
         assert client.get("/v1/projects").status_code == 401
         assert client.get("/health").status_code == 200
     assert len(requests) == 1
-    assert str(requests[0].url) == f"http://admin.internal/admin/{filename}"
+    assert str(requests[0].url) == f"http://admin.internal/{filename}"
     assert "authorization" not in requests[0].headers
     assert "cookie" not in requests[0].headers
     app.state.engine.dispose()
