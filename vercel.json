@@ -40,7 +40,7 @@
   "daemons": {
     "worker": {
       "root": ".",
-      "entrypoint": "infra/Dockerfile.worker",
+      "entrypoint": "Dockerfile.worker",
       "instances": { "iad1": 1 }
     }
   },
