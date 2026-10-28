@@ -12,6 +12,9 @@ SCHEMA_VERSION = 9
 def migrate(url):
     engine, _ = connect(url)
     with engine.begin() as conn:
+        if conn.dialect.name == "postgresql":
+            # Transaction-scoped: safe with pooled connections and overlapping deployments.
+            conn.execute(text("SELECT pg_advisory_xact_lock(1430340432, 1)"))
         conn.execute(
             text("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)")
         )

@@ -7,8 +7,8 @@ import json
 import os
 import sys
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from sqlalchemy import select, text
 
 from .app import passwords
 from .database import Assistant, Document, Job, Membership, Organization, Project, User, connect
@@ -53,6 +53,8 @@ class InitialOwner(BaseModel):
 
 def initialize(sessions, owner):
     with sessions.begin() as db:
+        if db.bind.dialect.name == "postgresql":
+            db.execute(text("SELECT pg_advisory_xact_lock(1430340432, 2)"))
         if db.scalar(select(User.id).limit(1)):
             return {"created": False}
         user = User(email=owner.email, password_hash=passwords.hash(owner.password))
@@ -82,6 +84,27 @@ def initialize(sessions, owner):
         db.flush()
         db.add(Job(document_id=document.id))
         return {"created": True, "document_id": document.id}
+
+
+def initialize_from_environment(sessions):
+    """Optional first-owner setup for deployments without an interactive shell."""
+    email = os.getenv("BOOTSTRAP_OWNER_EMAIL", "")
+    password = os.getenv("BOOTSTRAP_OWNER_PASSWORD", "")
+    if not email and not password:
+        return {"created": False}
+    try:
+        owner = InitialOwner(
+            email=email,
+            password=password,
+            name=os.getenv("BOOTSTRAP_ORGANIZATION", "My workspace"),
+        )
+    except ValidationError:
+        # Pydantic exceptions contain submitted values, including the password.
+        raise RuntimeError(
+            "Set BOOTSTRAP_OWNER_EMAIL and a 16–256 character BOOTSTRAP_OWNER_PASSWORD; "
+            "BOOTSTRAP_ORGANIZATION must be 1–100 characters."
+        ) from None
+    return initialize(sessions, owner)
 
 
 def main():

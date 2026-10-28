@@ -46,13 +46,16 @@ Vercel services and their URLs must not be copied into Vercel environment variab
    `OLLAMA_MODEL` and `OLLAMA_EMBED_MODEL` empty unless you have a reachable private
    Ollama service. With no embedding model, document retrieval remains lexical.
    Set `WEBHOOK_ALLOWED_URLS` only for destinations you actually use.
-4. From a trusted operator environment with the same private `DATABASE_URL`, install
-   Python 3.12 dependencies (`pip install .`), run `python -m platform_api.migrate`,
-   then `python -m platform_api.bootstrap`. Bootstrap prompts for the owner password;
-   do not put it in command arguments. Migrations run once before release, never in
-   a request or concurrently in every function/worker startup. The database must be
-   initialized before the worker starts. Provisioning and bootstrap are not automated
-   by `vercel.json`.
+4. Set `BOOTSTRAP_OWNER_EMAIL`, a sensitive `BOOTSTRAP_OWNER_PASSWORD` (16–256
+   characters) and optionally `BOOTSTRAP_ORGANIZATION` in the production environment.
+   The Vercel worker initializes the schema and first owner before processing jobs.
+   PostgreSQL transaction advisory locks serialize migrations and initial account
+   creation across overlapping worker deployments. Existing accounts are preserved;
+   bootstrap never changes an existing password. Remove the bootstrap variables
+   after the first successful sign-in. Do not copy them to preview environments.
+   Preview databases need separate initialization because daemons run only in production.
+   Non-Vercel operators can still run `python -m platform_api.migrate` and
+   `python -m platform_api.bootstrap` interactively. Migrations never run in requests.
 5. Do **not** define `FRONTEND_INTERNAL_URL` yourself. Vercel injects this binding into
    the API function at runtime. It is not a build variable or a browser API URL.
 
@@ -79,7 +82,7 @@ and allowed-domain embedding works through `/chat.html` but direct static HTML
 cannot be framed. Test real Gemini completion only after configuring the key.
 
 Use Git integration or `vercel` for a preview. After configuring/initializing the
-production database, stage a production deployment, verify it and promote it.
+production database and bootstrap variables, stage a production deployment, verify it and promote it.
 Database, daemon and AI usage can incur charges. This configuration does not buy
 resources, create a Vercel project, provision a database, or establish that a live
 deployment has passed its checks.

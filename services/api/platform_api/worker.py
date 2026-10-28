@@ -152,8 +152,18 @@ def run_once(sessions):
 
 
 def main():
-    engine, sessions = connect(os.getenv("DATABASE_URL", "sqlite:///./assistant.db"))
+    url = os.getenv("DATABASE_URL", "sqlite:///./assistant.db")
+    vercel = os.getenv("VERCEL") == "1"
+    if vercel:
+        from .migrate import migrate
+
+        migrate(url)
+    engine, sessions = connect(url)
     try:
+        if vercel:
+            from .bootstrap import initialize_from_environment
+
+            initialize_from_environment(sessions)
         while True:
             from .webhooks import deliver_once
 

@@ -2,7 +2,10 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from platform_api.app import create_app
-from platform_api.database import connect
+from platform_api.bootstrap import initialize_from_environment
+from platform_api.database import Assistant, User, connect
+from platform_api.migrate import migrate
+from sqlalchemy import func, select
 
 
 @pytest.mark.parametrize(
@@ -77,3 +80,34 @@ def test_vercel_requires_postgres_and_accepts_provider_connection_urls(monkeypat
         engine, _ = connect(f"{scheme}://test:test@localhost/assistant")
         assert engine.url.drivername == "postgresql+psycopg"
         engine.dispose()
+
+
+def test_environment_bootstrap_creates_only_one_owner_and_preserves_password(tmp_path, monkeypatch):
+    url = f"sqlite:///{tmp_path / 'bootstrap.db'}"
+    migrate(url)
+    engine, sessions = connect(url)
+    monkeypatch.setenv("BOOTSTRAP_OWNER_EMAIL", "owner@example.test")
+    monkeypatch.setenv("BOOTSTRAP_OWNER_PASSWORD", "first-private-password")
+    monkeypatch.setenv("BOOTSTRAP_ORGANIZATION", "My business")
+    assert initialize_from_environment(sessions)["created"] is True
+    with sessions() as db:
+        original_hash = db.scalar(select(User.password_hash))
+    monkeypatch.setenv("BOOTSTRAP_OWNER_PASSWORD", "different-private-password")
+    assert initialize_from_environment(sessions) == {"created": False}
+    with sessions() as db:
+        assert db.scalar(select(func.count()).select_from(User)) == 1
+        assert db.scalar(select(func.count()).select_from(Assistant)) == 1
+        assert db.scalar(select(User.password_hash)) == original_hash
+    engine.dispose()
+
+
+def test_environment_bootstrap_skips_absent_values_and_redacts_invalid_input(monkeypatch):
+    monkeypatch.delenv("BOOTSTRAP_OWNER_EMAIL", raising=False)
+    monkeypatch.delenv("BOOTSTRAP_OWNER_PASSWORD", raising=False)
+    assert initialize_from_environment(None) == {"created": False}
+    monkeypatch.setenv("BOOTSTRAP_OWNER_EMAIL", "owner@example.test")
+    monkeypatch.setenv("BOOTSTRAP_OWNER_PASSWORD", "secret")
+    with pytest.raises(RuntimeError) as error:
+        initialize_from_environment(None)
+    assert "secret" not in str(error.value)
+    assert error.value.__suppress_context__ is True
