@@ -1,19 +1,30 @@
 """Fetch HTML over the frontend binding while retaining API embedding policy."""
 
+import logging
+
 import httpx
 from fastapi import HTTPException
 from fastapi.responses import HTMLResponse
+
+logger = logging.getLogger(__name__)
 
 
 def mount_frontend(app, base_url):
     # Only fixed HTML paths are proxied. Never forward cookies, tokens or queries.
     async def page(filename):
         try:
-            async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
-                response = await client.get(base_url.rstrip("/") + "/" + filename)
+            # Binding traffic uses the deployment's proxy and certificate settings.
+            async with httpx.AsyncClient(timeout=10, trust_env=True) as client:
+                response = await client.get(base_url.rstrip("/") + "/admin/" + filename)
             if response.status_code != 200:
+                logger.warning(
+                    "Frontend binding failed: page=%s status=%s", filename, response.status_code
+                )
                 raise HTTPException(503, "FRONTEND_UNAVAILABLE")
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "Frontend binding failed: page=%s error=%s", filename, type(exc).__name__
+            )
             raise HTTPException(503, "FRONTEND_UNAVAILABLE") from None
         return HTMLResponse(response.content)
 

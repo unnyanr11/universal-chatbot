@@ -16,7 +16,11 @@ per-assistant `frame-ancestors` policy for embedded chat. Direct static frontend
 responses prohibit framing; use `/chat.html` for public chat and `/` for authenticated
 previews. Both load assets from `/admin/`. Existing integration URLs remain valid.
 
-The Vite build has a separate `dist` output on Vercel. The normal Docker/native build
+The Vite build has a separate `dist/admin` output on Vercel, exposed from `dist`.
+The physical asset paths match the preserved `/admin/` request prefix. The two
+public loader scripts are copied to the output root to retain existing embed URLs.
+Internal HTML requests honor the deployment's proxy/certificate settings and keep
+TLS verification enabled. The normal Docker/native build
 still produces the API's bundled `web` directory. Services never depend on another
 service's build output. Browser API calls stay relative to the deployment origin;
 putting a runtime binding in a `VITE_*` variable would not work and would expose an
