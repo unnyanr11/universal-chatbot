@@ -17,7 +17,16 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from .cloud import environment_provider
 from .context import WRITERS, database, digest, identity, project_scope
-from .database import Assistant, LoginWindow, Membership, Project, Session, User, connect
+from .database import (
+    Assistant,
+    LoginWindow,
+    Membership,
+    Project,
+    Session,
+    User,
+    connect,
+    environment_database_url,
+)
 from .inference import ProviderUnavailable
 
 passwords = PasswordHash.recommended()
@@ -48,9 +57,7 @@ def create_app(database_url=None, provider=None):
     from .limits import RequestBodyLimit
 
     app.add_middleware(RequestBodyLimit)
-    engine, sessions = connect(
-        database_url or os.getenv("DATABASE_URL", "sqlite:///./assistant.db")
-    )
+    engine, sessions = connect(database_url or environment_database_url())
     app.state.engine = engine
     app.state.sessions = sessions
     app.state.inference_gate = asyncio.Semaphore(1)

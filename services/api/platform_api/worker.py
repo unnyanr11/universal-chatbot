@@ -23,6 +23,7 @@ from .database import (
     UserMemory,
     WebsiteReview,
     connect,
+    environment_database_url,
 )
 from .inference import ProviderUnavailable, embed_texts
 
@@ -152,7 +153,7 @@ def run_once(sessions):
 
 
 def main():
-    url = os.getenv("DATABASE_URL", "sqlite:///./assistant.db")
+    url = environment_database_url()
     vercel = os.getenv("VERCEL") == "1"
     if vercel:
         from .migrate import migrate

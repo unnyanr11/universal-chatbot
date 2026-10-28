@@ -9,12 +9,12 @@ import httpx
 from sqlalchemy import select, text
 
 from .cloud import environment_provider
-from .database import Document, User, connect
+from .database import Document, User, connect, environment_database_url
 from .inference import embed_texts
 
 
 async def check(document_id=None, base_url="http://api:8000"):
-    engine, sessions = connect(os.environ["DATABASE_URL"])
+    engine, sessions = connect(environment_database_url())
     try:
         with sessions() as db:
             db.execute(text("SELECT 1"))

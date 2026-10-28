@@ -37,6 +37,10 @@ Vercel services and their URLs must not be copied into Vercel environment variab
 
 ## Provision before deployment
 
+Using Supabase? Follow [docs/SUPABASE.md](docs/SUPABASE.md) for the pooler connection,
+server-only table protection and database cutover. Supabase can replace Neon;
+the frontend and API still share one Vercel project.
+
 1. Link the repository to the intended Vercel project/team and connect a persistent
    PostgreSQL database. Use separate databases for production and previews. Never
    run previews against the production database.

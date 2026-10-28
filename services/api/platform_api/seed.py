@@ -7,7 +7,17 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 
 from .app import passwords
-from .database import Assistant, Membership, Organization, Project, Service, Slot, User, connect
+from .database import (
+    Assistant,
+    Membership,
+    Organization,
+    Project,
+    Service,
+    Slot,
+    User,
+    connect,
+    environment_database_url,
+)
 
 
 def seed():
@@ -16,7 +26,7 @@ def seed():
     password = os.getenv("DEMO_PASSWORD", "")
     if len(password) < 16:
         raise SystemExit("Set DEMO_PASSWORD to a unique value of at least 16 characters")
-    engine, sessions = connect(os.getenv("DATABASE_URL", "sqlite:///./assistant.db"))
+    engine, sessions = connect(environment_database_url())
     with sessions.begin() as db:
         for slug, name in [("cedar", "Cedar Repair Studio"), ("harbor", "Harbor Bike Care")]:
             email = f"owner@{slug}.example"

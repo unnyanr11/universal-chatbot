@@ -7,6 +7,7 @@ from uuid import uuid4
 from sqlalchemy import ForeignKey, String, UniqueConstraint, create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 def identifier():
@@ -69,13 +70,30 @@ class LoginWindow(Base):
     attempts: Mapped[int]
 
 
+def environment_database_url():
+    return os.getenv("SUPABASE_DATABASE_URL") or os.getenv(
+        "DATABASE_URL", "sqlite:///./assistant.db"
+    )
+
+
+def is_supabase_database(url):
+    host = (make_url(url).host or "").lower()
+    return host.endswith((".supabase.co", ".pooler.supabase.com"))
+
+
 def connect(url):
     parsed = make_url(url)
     if parsed.drivername in {"postgres", "postgresql"}:
         url = parsed.set(drivername="postgresql+psycopg")
     if os.getenv("VERCEL") == "1" and parsed.get_backend_name() not in {"postgres", "postgresql"}:
         raise RuntimeError("Vercel requires a persistent PostgreSQL DATABASE_URL")
-    engine = create_engine(url, pool_pre_ping=True)
+    options = {}
+    if is_supabase_database(url):
+        # Supavisor owns the pool; transaction mode cannot retain prepared statements.
+        options = {"poolclass": NullPool, "connect_args": {"prepare_threshold": None}}
+        if "sslmode" not in parsed.query:
+            options["connect_args"]["sslmode"] = "require"
+    engine = create_engine(url, pool_pre_ping=True, **options)
     if engine.dialect.name == "sqlite":
 
         @event.listens_for(engine, "connect")

@@ -1,12 +1,19 @@
 """Additive schema revisions. These revisions add tables; future alterations need explicit DDL."""
 
-import os
-
 from sqlalchemy import text
 
-from .database import Base, connect
+from .database import Base, connect, environment_database_url, is_supabase_database
 
 SCHEMA_VERSION = 9
+
+
+def protect_supabase_tables(conn):
+    """The application API owns authorization; browser Data API access is denied."""
+    quote = conn.dialect.identifier_preparer.quote
+    for name in [*Base.metadata.tables, "schema_version"]:
+        table = "public." + quote(name)
+        conn.execute(text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY"))
+        conn.execute(text(f"REVOKE ALL ON TABLE {table} FROM PUBLIC, anon, authenticated"))
 
 
 def migrate(url):
@@ -38,8 +45,10 @@ def migrate(url):
                 conn.execute(
                     text("INSERT INTO schema_version VALUES (:version)"), {"version": revision}
                 )
+        if is_supabase_database(url):
+            protect_supabase_tables(conn)
     engine.dispose()
 
 
 if __name__ == "__main__":
-    migrate(os.getenv("DATABASE_URL", "sqlite:///./assistant.db"))
+    migrate(environment_database_url())

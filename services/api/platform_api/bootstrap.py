@@ -11,7 +11,17 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from sqlalchemy import select, text
 
 from .app import passwords
-from .database import Assistant, Document, Job, Membership, Organization, Project, User, connect
+from .database import (
+    Assistant,
+    Document,
+    Job,
+    Membership,
+    Organization,
+    Project,
+    User,
+    connect,
+    environment_database_url,
+)
 
 STARTER_TEXT = """# Getting started with Assistant Studio
 Upload your approved business documents in Knowledge. Wait for each document to become ready
@@ -112,7 +122,7 @@ def main():
     parser.add_argument("--stdin", action="store_true", help="Read owner JSON from stdin")
     parser.add_argument("--status", action="store_true", help="Report whether users exist")
     args = parser.parse_args()
-    engine, sessions = connect(os.getenv("DATABASE_URL", "sqlite:///./assistant.db"))
+    engine, sessions = connect(environment_database_url())
     try:
         with sessions() as db:
             initialized = bool(db.scalar(select(User.id).limit(1)))
