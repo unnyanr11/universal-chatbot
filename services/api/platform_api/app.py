@@ -252,7 +252,11 @@ def create_app(database_url=None, provider=None):
     from fastapi.staticfiles import StaticFiles
 
     web = Path(__file__).parent / "web"
-    if (web / "index.html").exists():
+    if frontend_url := os.getenv("FRONTEND_INTERNAL_URL"):
+        from .frontend import mount_frontend
+
+        mount_frontend(app, frontend_url)
+    elif (web / "index.html").exists():
         app.mount("/", StaticFiles(directory=web, html=True), name="web")
     else:
 

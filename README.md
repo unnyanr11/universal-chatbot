@@ -46,6 +46,10 @@ For unattended setup, use `--domain`, `--owner-email`, `--organization`, `--pass
 
 ## Native setup
 
+For a single-domain Vercel deployment with separate FastAPI and Vite services plus
+a private worker daemon, see [VERCEL.md](VERCEL.md). This requires an initialized
+external PostgreSQL database and server-side secrets; the Docker wizard is separate.
+
 Requires Python 3.12 and Node.js 22.12+ or 24. From the repository root:
 
 ```bash

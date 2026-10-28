@@ -1,9 +1,11 @@
 """Small relational schema shared by native SQLite and Compose PostgreSQL."""
 
+import os
 import time
 from uuid import uuid4
 
 from sqlalchemy import ForeignKey, String, UniqueConstraint, create_engine, event
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -68,6 +70,11 @@ class LoginWindow(Base):
 
 
 def connect(url):
+    parsed = make_url(url)
+    if parsed.drivername in {"postgres", "postgresql"}:
+        url = parsed.set(drivername="postgresql+psycopg")
+    if os.getenv("VERCEL") == "1" and parsed.get_backend_name() not in {"postgres", "postgresql"}:
+        raise RuntimeError("Vercel requires a persistent PostgreSQL DATABASE_URL")
     engine = create_engine(url, pool_pre_ping=True)
     if engine.dialect.name == "sqlite":
 

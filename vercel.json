@@ -1,0 +1,54 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "fastapi",
+      "entrypoint": "app:app",
+      "installCommand": "pip install .",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "admin",
+          "format": "url",
+          "env": "FRONTEND_INTERNAL_URL"
+        }
+      ]
+    },
+    "admin": {
+      "root": "apps/admin",
+      "framework": "vite",
+      "installCommand": "npm ci",
+      "devCommand": "npm run dev -- --base=/admin/ --port=$PORT",
+      "buildCommand": "npm run build -- --base=/admin/ --outDir=dist",
+      "outputDirectory": "dist",
+      "rewrites": [
+        { "source": "/admin/:path*", "destination": "/:path*" }
+      ],
+      "headers": [
+        {
+          "source": "/(.*)",
+          "headers": [
+            { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'" },
+            { "key": "X-Content-Type-Options", "value": "nosniff" },
+            { "key": "Referrer-Policy", "value": "no-referrer" }
+          ]
+        }
+      ]
+    }
+  },
+  "daemons": {
+    "worker": {
+      "root": ".",
+      "entrypoint": "infra/Dockerfile.worker",
+      "instances": { "iad1": 1 }
+    }
+  },
+  "rewrites": [
+    { "source": "/admin", "destination": { "service": "admin" } },
+    { "source": "/admin/(.*)", "destination": { "service": "admin" } },
+    { "source": "/widget-loader.js", "destination": { "service": "admin" } },
+    { "source": "/demo-embed.js", "destination": { "service": "admin" } },
+    { "source": "/(.*)", "destination": { "service": "app" } }
+  ]
+}
