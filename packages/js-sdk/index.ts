@@ -25,7 +25,11 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
   ) {
-    super(code.replaceAll("_", " ").toLowerCase());
+    super(
+      code === "DATABASE_UNAVAILABLE"
+        ? "The workspace database is unavailable. Ask the administrator to check its connection settings."
+        : code.replaceAll("_", " ").toLowerCase(),
+    );
   }
 }
 export class AssistantClient {

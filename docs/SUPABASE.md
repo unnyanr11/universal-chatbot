@@ -59,3 +59,22 @@ Vercel deployment uses the new database.
 References: [Supabase connections](https://supabase.com/docs/guides/database/connecting-to-postgres),
 [database security](https://supabase.com/docs/guides/database/secure-data),
 [psycopg prepared statements](https://www.psycopg.org/psycopg3/docs/advanced/prepare.html).
+
+## Login connection failures
+
+`DATABASE_UNAVAILABLE` (HTTP 503) means a database operation failed before login
+could complete. It is not an incorrect Studio login password. Check the target
+Vercel project's Production environment, update `SUPABASE_DATABASE_URL` privately,
+and redeploy. Environment variables are not shared between Vercel projects.
+
+For a Supabase password authentication failure, copy the complete Transaction
+pooler string from Connect, preserve its project-specific username and hostname,
+and replace the password placeholder with the current project database password.
+Percent-encode reserved password characters exactly once, remove placeholder
+brackets, and do not encode the whole URL. Supabase account passwords, Studio owner
+passwords and API keys do not authenticate a PostgreSQL connection.
+
+The worker cannot create the initial owner until the database connection works.
+After redeployment, check the worker and sign in with `BOOTSTRAP_OWNER_EMAIL` and
+`BOOTSTRAP_OWNER_PASSWORD`. Changing bootstrap variables does not reset an existing
+owner's password. Keep connection strings and driver exception details private.

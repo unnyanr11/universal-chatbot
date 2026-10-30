@@ -1,6 +1,7 @@
 """Phase 0 API: opaque revocable sessions and membership-derived authorization."""
 
 import asyncio
+import logging
 import os
 import secrets
 import time
@@ -14,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import OperationalError
 
 from .cloud import environment_provider
 from .context import WRITERS, database, digest, identity, project_scope
@@ -31,6 +33,7 @@ from .inference import ProviderUnavailable
 
 passwords = PasswordHash.recommended()
 dummy_hash = passwords.hash(secrets.token_urlsafe(32))
+logger = logging.getLogger(__name__)
 
 
 class Input(BaseModel):
@@ -62,6 +65,17 @@ def create_app(database_url=None, provider=None):
     app.state.sessions = sessions
     app.state.inference_gate = asyncio.Semaphore(1)
     app.state.provider = provider or environment_provider(app.state.inference_gate)
+
+    @app.exception_handler(OperationalError)
+    async def database_unavailable(request, exc):
+        # Driver messages can include credentials from malformed connection URLs.
+        # Log only the request ID; never serialize the exception or submitted input.
+        request_id = request.state.request_id
+        logger.error("Database operation unavailable request_id=%s", request_id)
+        return JSONResponse(
+            status_code=503,
+            content={"error": {"code": "DATABASE_UNAVAILABLE", "request_id": request_id}},
+        )
 
     @app.middleware("http")
     async def metadata(request: Request, call_next):
