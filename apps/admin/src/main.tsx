@@ -5,6 +5,7 @@ import { client, widget, type Assistant } from "./model";
 import "./style.css";
 import { LoginScreen } from "./screens/LoginScreen";
 import { OverviewScreen } from "./screens/OverviewScreen";
+import { SetupScreen } from "./screens/SetupScreen";
 import { KnowledgeScreen } from "./screens/KnowledgeScreen";
 import { ChatScreen } from "./screens/ChatScreen";
 import { AppointmentsScreen } from "./screens/AppointmentsScreen";
@@ -20,6 +21,7 @@ import { Calendars } from "./features/Calendars";
 import { Team, Join } from "./features/Team";
 function App() {
   const studio = useStudio();
+  const [assistantName, setAssistantName] = React.useState("");
   const {
     token,
     setToken,
@@ -55,9 +57,7 @@ function App() {
     >
       {!widget && (
         <aside className="sidebar">
-          <div className="brand">
-            ◈ &nbsp; Studio<span className="version">LOCAL</span>
-          </div>
+          <div className="brand">◈ &nbsp; Studio</div>
           <div className="workspace">
             <span className="eyebrow">WORKSPACE</span>
             <select
@@ -80,6 +80,7 @@ function App() {
           <nav>
             {[
               "Overview",
+              "Get started",
               "Knowledge",
               "Chat",
               "Appointments",
@@ -97,6 +98,7 @@ function App() {
                 if (
                   [
                     "Settings",
+                    "Get started",
                     "Calendars",
                     "Workflows",
                     "Tools",
@@ -116,10 +118,11 @@ function App() {
                   ].includes(role);
                 return true;
               })
-              .map((name, i) => (
+              .map((name) => (
                 <button
                   key={name}
                   className={tab === name ? "nav active" : "nav"}
+                  aria-current={tab === name ? "page" : undefined}
                   onClick={() => {
                     setTab(name);
                     setError("");
@@ -127,9 +130,24 @@ function App() {
                 >
                   <span aria-hidden="true">
                     {
-                      ["◫", "▤", "◌", "▦", "⌘", "↗", "⚙", "☏", "⇢", "◇", "▥"][
-                        i
-                      ]
+                      (
+                        {
+                          Overview: "◫",
+                          "Get started": "✓",
+                          Knowledge: "▤",
+                          Chat: "◌",
+                          Appointments: "▦",
+                          Tools: "⌘",
+                          Integrate: "↗",
+                          Settings: "⚙",
+                          Support: "☏",
+                          Workflows: "⇢",
+                          Privacy: "◇",
+                          Analytics: "▥",
+                          Team: "♧",
+                          Calendars: "▦",
+                        } as Record<string, string>
+                      )[name]
                     }
                   </span>
                   {name}
@@ -176,7 +194,14 @@ function App() {
             <h1>{widget ? (current?.name ?? "Assistant") : tab}</h1>
           </div>
           <div className="header-right">
-            <span className="badge">Self-hosted workspace</span>
+            {writer && (
+              <button
+                className="text-button"
+                onClick={() => setTab("Get started")}
+              >
+                Setup guide
+              </button>
+            )}
             <select
               aria-label="Assistant"
               value={assistant}
@@ -203,28 +228,52 @@ function App() {
             {notice}
           </div>
         )}
-        {!assistant && (
+        {writer && project && !assistant && (
           <section className="panel">
             <h2>Create your first assistant</h2>
-            <button
-              onClick={() =>
-                action(async () => {
-                  const name = prompt("Assistant name");
-                  if (!name?.trim()) return;
+            <p>
+              Give it a name your customers will recognise. You can change this
+              later.
+            </p>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void action(async () => {
                   const a = await client.request<Assistant>(
                     api("/assistants"),
-                    { method: "POST", body: JSON.stringify({ name }) },
+                    {
+                      method: "POST",
+                      body: JSON.stringify({ name: assistantName.trim() }),
+                    },
                   );
                   setAssistants((old) => [...old, a]);
                   setAssistant(a.id);
-                })
-              }
+                  setAssistantName("");
+                  setTab("Get started");
+                });
+              }}
             >
-              Create assistant
-            </button>
+              <label>
+                Assistant name
+                <input
+                  value={assistantName}
+                  onChange={(event) => setAssistantName(event.target.value)}
+                  maxLength={100}
+                  placeholder="For example, Acme support"
+                  required
+                />
+              </label>
+              <button
+                className="primary"
+                disabled={studio.busy || !assistantName.trim()}
+              >
+                Create assistant
+              </button>
+            </form>
           </section>
         )}
         {tab === "Overview" && <OverviewScreen studio={studio} />}
+        {writer && tab === "Get started" && <SetupScreen studio={studio} />}
         {tab === "Knowledge" && <KnowledgeScreen studio={studio} />}
         {tab === "Chat" && <ChatScreen studio={studio} />}
         {tab === "Appointments" && <AppointmentsScreen studio={studio} />}

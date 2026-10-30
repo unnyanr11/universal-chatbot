@@ -46,8 +46,23 @@ export function ProviderSettings({
     );
   }, [saved.data]);
   if (!draft || !catalog.data)
-    return <ErrorNotice error={saved.error || catalog.error} />;
+    return saved.error || catalog.error ? (
+      <ErrorNotice error={saved.error || catalog.error} />
+    ) : (
+      <p role="status">Loading AI connection…</p>
+    );
   const disabled = job.busy || !draft.can_manage;
+  const invalid =
+    !draft.model.trim() ||
+    (draft.provider === "custom" && !draft.base_url) ||
+    (draft.provider !== "ollama" &&
+      (!consent ||
+        !Number.isInteger(draft.max_tokens) ||
+        draft.max_tokens < 256 ||
+        draft.max_tokens > 8192 ||
+        (!key.trim() && (!draft.has_key || draft.inherited))));
+  const unsaved =
+    Boolean(key) || JSON.stringify(draft) !== JSON.stringify(saved.data);
   async function save() {
     if (!draft) return;
     setResult("");
@@ -75,11 +90,11 @@ export function ProviderSettings({
   }
   return (
     <section className="panel">
-      <h2>AI provider</h2>
+      <h2>Connect your AI service</h2>
       <p className="muted">
-        Choose the service for this assistant. API keys stay on the server and
-        are excluded from assistant exports. Embeddings remain a separate local
-        setting.
+        Choose a service, enter the model name and API key from that account,
+        then save and test the connection. Your API key stays private on the
+        server.
       </p>
       <ErrorNotice error={job.error || saved.error} />
       {!draft.can_manage && (
@@ -222,12 +237,23 @@ export function ProviderSettings({
           ? "Using the deployment default. Save a separate key to override it for this assistant."
           : "Assistant override active. These operational credentials are separate from published content versions."}
       </p>
+      <p className="fine">
+        Already using a working hosting default? You don’t need to enter another
+        key. Use “Test saved provider” to check it. A test sends a small request
+        and provider charges may apply.
+      </p>
+      {draft.can_manage && invalid && (
+        <p className="fine">
+          To save a custom connection, enter a model, add a key for cloud
+          services and allow the service to receive chat context.
+        </p>
+      )}
       <div className="button-row">
-        <button disabled={disabled} onClick={save}>
+        <button disabled={disabled || invalid} onClick={save}>
           Save AI provider
         </button>
         <button
-          disabled={disabled}
+          disabled={disabled || unsaved}
           onClick={() =>
             job.task(async () => {
               setResult("");
@@ -258,6 +284,12 @@ export function ProviderSettings({
           Use deployment default
         </button>
       </div>
+      {unsaved && (
+        <p className="fine">
+          Save your changes before testing. The test always uses the saved
+          connection.
+        </p>
+      )}
       {result && <p role="status">{result}</p>}
     </section>
   );

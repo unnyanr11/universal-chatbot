@@ -49,7 +49,9 @@ export function KnowledgeScreen({ studio }: { studio: StudioState }) {
                     body: data,
                   });
                   await refreshDocs();
-                  setNotice("Source queued. Run the worker to ingest it.");
+                  setNotice(
+                    "Source uploaded. We’re preparing it for answers. It will show Ready when processing finishes.",
+                  );
                 });
                 e.target.value = "";
               }}

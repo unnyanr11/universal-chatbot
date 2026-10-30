@@ -33,6 +33,7 @@ export function Settings({
   const root = `/v1/assistants/${assistant}`;
   const [tick, setTick] = useState(0),
     [draft, setDraft] = useState<Config>();
+  const [notice, setNotice] = useState("");
   const { data, error } = useResource<Settings>(root + "/configuration", tick);
   const versions = useResource<{ items: Version[] }>(root + "/versions", tick);
   const job = useTask();
@@ -47,16 +48,25 @@ export function Settings({
         method: "PUT",
         body: JSON.stringify({ revision: data.revision, configuration: draft }),
       });
+      setNotice(
+        "Draft saved. Test your assistant, then publish when you’re happy with it.",
+      );
       setTick((v) => v + 1);
     });
   }
-  if (!draft || !data) return <ErrorNotice error={error} />;
+  if (!draft || !data)
+    return error ? (
+      <ErrorNotice error={error} />
+    ) : (
+      <p role="status">Loading assistant settings…</p>
+    );
+  const dirty = JSON.stringify(draft) !== JSON.stringify(data.configuration);
   return (
     <section className="panel">
       <h2>Assistant configuration</h2>
       <p className="muted">
-        Save drafts, publish a source manifest, or restore a previous published
-        version. Deleted sources stay deleted.
+        Make your assistant feel like your business. Save changes as a draft;
+        publish only when you want visitors to see them.
       </p>
       <ErrorNotice error={job.error || error} />
       <div className="form-grid">
@@ -138,7 +148,7 @@ export function Settings({
           />
         </label>
         <label>
-          Allowed embedding host names
+          Website domains allowed to show your chatbot
           <textarea
             value={draft.allowed_domains.join("\n")}
             onChange={(e) =>
@@ -148,21 +158,28 @@ export function Settings({
               })
             }
           />
+          <small>
+            One hostname per line, such as www.yourbusiness.com. Leave out
+            https:// and page paths.
+          </small>
         </label>
       </div>
       <div className="button-row">
-        <button disabled={job.busy} onClick={save}>
+        <button disabled={job.busy || !dirty} onClick={save}>
           Save draft
         </button>
         <button
           className="primary"
-          disabled={job.busy || data.revision === 0}
+          disabled={job.busy || dirty || data.revision === 0}
           onClick={() =>
             job.task(async () => {
               await client.request(root + "/publish", {
                 method: "POST",
                 body: JSON.stringify({ revision: data.revision }),
               });
+              setNotice(
+                "Published. Your enabled website chat will now use this saved version.",
+              );
               setTick((v) => v + 1);
             })
           }
@@ -198,10 +215,21 @@ export function Settings({
           />
         </label>
       </div>
+      {dirty && (
+        <p className="fine">
+          You have unsaved changes. Save your draft before publishing or leaving
+          this page.
+        </p>
+      )}
+      {notice && !dirty && (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      )}
       <p className="fine">
         Revision {data.revision} · Published version{" "}
-        {data.published_version || "none"} · Local preview only; publish does
-        not deploy externally.
+        {data.published_version || "none"} · Publishing updates chatbot content.
+        Enable guest chat in Integrate to share it on your website.
       </p>
       <h3>Version history</h3>
       {versions.data?.items.map((v) => (

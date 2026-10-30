@@ -1014,6 +1014,50 @@ textarea {
 .sidebar nav {
   overflow-y: auto;
 }
+.setup-intro h2 {
+  max-width: 680px;
+}
+.setup-intro p {
+  max-width: 720px;
+}
+.setup-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.setup-step {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin: 0;
+}
+.setup-step h2 {
+  font-size: 23px;
+  margin-top: 12px;
+}
+.setup-step p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.setup-number {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--green);
+  font-weight: 600;
+}
+@media (max-width: 1000px) {
+  .setup-list {
+    grid-template-columns: 1fr;
+  }
+}
 details {
   margin-top: 20px;
 }
