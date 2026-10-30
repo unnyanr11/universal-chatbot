@@ -25,10 +25,24 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
   ) {
+    const messages: Record<string, string> = {
+      EMAIL_CONFIRMATION_REQUIRED:
+        "Confirm your email using the link in your inbox, then sign in again.",
+      SIGNUP_RATE_LIMITED:
+        "Too many account requests. Please wait a minute and try again.",
+      AUTH_SERVICE_UNAVAILABLE:
+        "Account services are temporarily unavailable. Please try again later.",
+      SIGNUP_FAILED:
+        "We couldn’t create your account. Check your details or try signing in if you already registered.",
+      OWN_AI_KEY_REQUIRED:
+        "Connect your own AI service in Settings to use AI answers.",
+      SIGNUP_DISABLED: "New registrations are currently closed.",
+    };
     super(
-      code === "DATABASE_UNAVAILABLE"
-        ? "The workspace database is unavailable. Ask the administrator to check its connection settings."
-        : code.replaceAll("_", " ").toLowerCase(),
+      messages[code] ??
+        (code === "DATABASE_UNAVAILABLE"
+          ? "The workspace database is unavailable. Ask the administrator to check its connection settings."
+          : code.replaceAll("_", " ").toLowerCase()),
     );
   }
 }

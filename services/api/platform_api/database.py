@@ -31,6 +31,17 @@ class Organization(Base):
     name: Mapped[str]
 
 
+class PublicAccount(Base):
+    __tablename__ = "public_accounts"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    subject: Mapped[str] = mapped_column(String(100), unique=True)
+
+
+class PublicWorkspace(Base):
+    __tablename__ = "public_workspaces"
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), primary_key=True)
+
+
 class Membership(Base):
     __tablename__ = "memberships"
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)

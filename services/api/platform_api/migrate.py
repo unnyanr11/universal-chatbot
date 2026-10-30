@@ -4,7 +4,7 @@ from sqlalchemy import text
 
 from .database import Base, connect, environment_database_url, is_supabase_database
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 def protect_supabase_tables(conn):

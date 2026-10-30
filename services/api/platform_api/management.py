@@ -27,6 +27,8 @@ from .database import (
     OperationPolicy,
     Organization,
     Project,
+    PublicAccount,
+    PublicWorkspace,
     Reminder,
     Reservation,
     ResourceReservation,
@@ -214,7 +216,7 @@ def publish(
     from .database import AssistantProvider
     from .providers import metadata
 
-    provider = metadata(request, db.get(AssistantProvider, assistant.id))
+    provider = metadata(request, db.get(AssistantProvider, assistant.id), db, assistant.id)
     snapshot = {
         "configuration": json.loads(settings.configuration),
         "knowledge": [
@@ -544,9 +546,22 @@ class OrganisationInput(BaseModel):
 
 @router.post("/organizations", status_code=201)
 def create_organization(body: OrganisationInput, session=Depends(identity), db=Depends(database)):
+    public_account = db.get(PublicAccount, session.user_id, with_for_update=True)
+    if (
+        public_account
+        and db.scalar(
+            select(func.count())
+            .select_from(Membership)
+            .where(Membership.user_id == session.user_id, Membership.role == "owner")
+        )
+        >= 3
+    ):
+        raise HTTPException(409, "WORKSPACE_LIMIT_REACHED")
     organization = Organization(name=body.name)
     db.add(organization)
     db.flush()
+    if public_account:
+        db.add(PublicWorkspace(organization_id=organization.id))
     db.add(Membership(user_id=session.user_id, organization_id=organization.id, role="owner"))
     project = Project(organization_id=organization.id, name=body.name + " workspace")
     db.add(project)

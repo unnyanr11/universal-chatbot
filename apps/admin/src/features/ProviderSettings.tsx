@@ -13,6 +13,7 @@ type Configuration = {
   revision: number;
   inherited: boolean;
   can_manage: boolean;
+  requires_own_key?: boolean;
 };
 
 export function ProviderSettings({
@@ -130,11 +131,16 @@ export function ProviderSettings({
               setResult("");
             }}
           >
-            {catalog.data.items.map((item) => (
-              <option value={item.id} key={item.id}>
-                {item.name}
-              </option>
-            ))}
+            {draft.requires_own_key && draft.provider === "ollama" && (
+              <option value="ollama">Choose your AI service</option>
+            )}
+            {catalog.data.items
+              .filter((item) => !draft.requires_own_key || item.id !== "ollama")
+              .map((item) => (
+                <option value={item.id} key={item.id}>
+                  {item.name}
+                </option>
+              ))}
           </select>
         </label>
         <label>
@@ -233,15 +239,19 @@ export function ProviderSettings({
         </label>
       )}
       <p className="fine">
-        {draft.inherited
-          ? "Using the deployment default. Save a separate key to override it for this assistant."
-          : "Assistant override active. These operational credentials are separate from published content versions."}
+        {draft.requires_own_key
+          ? "This workspace uses your own AI account. Connect a service to generate AI answers; source-based answers work without one."
+          : draft.inherited
+            ? "Using the deployment default. Save a separate key to override it for this assistant."
+            : "Assistant override active. These operational credentials are separate from published content versions."}
       </p>
-      <p className="fine">
-        Already using a working hosting default? You don’t need to enter another
-        key. Use “Test saved provider” to check it. A test sends a small request
-        and provider charges may apply.
-      </p>
+      {!draft.requires_own_key && (
+        <p className="fine">
+          Already using a working hosting default? You don’t need to enter
+          another key. Use “Test saved provider” to check it. A test sends a
+          small request and provider charges may apply.
+        </p>
+      )}
       {draft.can_manage && invalid && (
         <p className="fine">
           To save a custom connection, enter a model, add a key for cloud
@@ -281,7 +291,9 @@ export function ProviderSettings({
             })
           }
         >
-          Use deployment default
+          {draft.requires_own_key
+            ? "Disconnect AI service"
+            : "Use deployment default"}
         </button>
       </div>
       {unsaved && (

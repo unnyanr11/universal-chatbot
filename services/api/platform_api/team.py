@@ -17,6 +17,7 @@ from .database import (
     Operation,
     Organization,
     Project,
+    PublicAccount,
     Session,
     SupportTicket,
     User,
@@ -235,8 +236,27 @@ def remove_member(
 
 
 @router.post("/me/password", status_code=204)
-def rotate_password(body: PasswordChange, session=Depends(identity), db=Depends(database)):
+async def rotate_password(body: PasswordChange, session=Depends(identity), db=Depends(database)):
     user = db.get(User, session.user_id)
+    account = db.get(PublicAccount, user.id)
+    if account:
+        from .registration import auth_request
+
+        result = await auth_request(
+            "token?grant_type=password", {"email": user.email, "password": body.current_password}
+        )
+        remote = result.get("user") or {}
+        if remote.get("id") != account.subject or not result.get("access_token"):
+            raise HTTPException(401, "CURRENT_PASSWORD_INCORRECT")
+        await auth_request(
+            "user",
+            {"password": body.new_password},
+            method="PUT",
+            access_token=result["access_token"],
+        )
+        db.execute(delete(Session).where(Session.user_id == user.id))
+        db.commit()
+        return
     if not passwords.verify(body.current_password, user.password_hash):
         raise HTTPException(401, "CURRENT_PASSWORD_INCORRECT")
     user.password_hash = passwords.hash(body.new_password)

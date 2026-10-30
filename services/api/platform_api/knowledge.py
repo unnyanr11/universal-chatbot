@@ -11,7 +11,7 @@ from collections import Counter
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
 from .context import assistant_scope, database, identity, require_writer, widget_active
@@ -26,6 +26,7 @@ from .database import (
     Job,
     Membership,
     Message,
+    PublicWorkspace,
     Session,
     SupportNote,
     SupportTicket,
@@ -121,6 +122,14 @@ class ChatInput(BaseModel):
 @router.post("/assistants/{assistant_id}/documents", status_code=202)
 async def upload(file: UploadFile, scope=Depends(assistant_scope), db=Depends(database)):
     require_writer(scope)
+    if (
+        db.get(PublicWorkspace, scope[1].organization_id, with_for_update=True)
+        and db.scalar(
+            select(func.count()).select_from(Document).where(Document.assistant_id == scope[0].id)
+        )
+        >= 50
+    ):
+        raise HTTPException(409, "SOURCE_LIMIT_REACHED")
     data = await file.read(2_000_001)
     await file.close()
     if not data or len(data) > 2_000_000:

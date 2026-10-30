@@ -237,12 +237,16 @@ export function useStudio() {
   async function login(e: React.FormEvent) {
     e.preventDefault();
     await action(async () => {
-      const r = await client.request<{ access_token: string }>("/v1/sessions", {
+      const r = await client.request<{
+        access_token: string;
+        public_account?: boolean;
+      }>("/v1/sessions", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
       setPassword("");
       setToken(r.access_token);
+      if (r.public_account) setTab("Get started");
     });
   }
   async function send(e: React.FormEvent) {

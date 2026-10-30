@@ -163,3 +163,7 @@ Browser tests start an isolated synthetic API/worker; stop any server occupying 
 - [Feature status](docs/STATUS.md)
 
 No external email, SMS, commerce, payment, calendar or arbitrary HTTP connector is silently enabled. Those adapters require reviewed implementation and, where applicable, credentials. Voice, Flutter and enterprise SSO are optional future capabilities. The mobile source example still needs device/emulator acceptance. No production security certification, unlimited free inference, invented accuracy or business impact is claimed.
+
+## Public accounts
+
+To let visitors register and build their own chatbots, follow [Public signup setup](docs/PUBLIC_SIGNUP.md). Supabase Auth confirms new emails, and each public user gets an isolated workspace with their own AI credentials. Keep registration closed until production email delivery and confirmation redirects are verified.

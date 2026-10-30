@@ -56,8 +56,8 @@ export function SetupScreen({ studio }: { studio: StudioState }) {
             Connect or change AI service
           </button>
           <span className="muted">
-            Already configured through your hosting settings? You can keep using
-            that connection.
+            Bring an API key from your AI account. Your documents and settings
+            stay in your workspace.
           </span>
         </div>
       </section>

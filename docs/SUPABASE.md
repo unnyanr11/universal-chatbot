@@ -4,7 +4,9 @@ Supabase Postgres can replace Neon or another PostgreSQL host without rewriting 
 application's transactional API. The React frontend, FastAPI functions and private
 worker remain in one Vercel project. Existing application sessions, tenant roles,
 bookings and workflows continue to be enforced by the application API. Supabase
-Auth, Storage and Edge Functions are not enabled by this database integration.
+Auth is used separately when public signup is configured as described in
+[Public accounts](PUBLIC_SIGNUP.md). The database integration alone does not
+enable Auth, Storage or Edge Functions.
 
 ## Connection
 

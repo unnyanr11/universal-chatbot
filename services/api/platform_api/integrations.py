@@ -11,7 +11,7 @@ from urllib.parse import urljoin, urlsplit
 from cryptography.fernet import InvalidToken
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import IntegrityError
@@ -29,6 +29,7 @@ from .database import (
     Lead,
     Membership,
     Project,
+    PublicWorkspace,
     Session,
     User,
     VisitorIdentity,
@@ -423,6 +424,14 @@ def accept(
     db=Depends(database),
 ):
     require_writer(scope)
+    if (
+        db.get(PublicWorkspace, scope[1].organization_id, with_for_update=True)
+        and db.scalar(
+            select(func.count()).select_from(Document).where(Document.assistant_id == scope[0].id)
+        )
+        >= 50
+    ):
+        raise HTTPException(409, "SOURCE_LIMIT_REACHED")
     row = db.get(WebsiteReview, body.review_id)
     if (
         not body.accepted

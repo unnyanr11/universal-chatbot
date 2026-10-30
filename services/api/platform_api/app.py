@@ -24,6 +24,8 @@ from .database import (
     LoginWindow,
     Membership,
     Project,
+    PublicAccount,
+    PublicWorkspace,
     Session,
     User,
     connect,
@@ -145,7 +147,7 @@ def create_app(database_url=None, provider=None):
         return {"status": "alive", "milestone": "local-platform-preview"}
 
     @app.post("/v1/sessions", status_code=201)
-    def login(body: Login, db=Depends(database)):
+    async def login(body: Login, db=Depends(database)):
         # Global DB-backed minute budget also bounds arbitrary-identity guessing.
         key = f"login:{int(time.time()) // 60}"
         insert = sqlite_insert if engine.dialect.name == "sqlite" else pg_insert
@@ -162,6 +164,10 @@ def create_app(database_url=None, provider=None):
         if count > 20:
             raise HTTPException(429, "LOGIN_RATE_LIMITED", headers={"Retry-After": "60"})
         user = db.scalar(select(User).where(User.email == body.email.strip().lower()))
+        if not user or db.get(PublicAccount, user.id):
+            from .registration import login_public
+
+            return await login_public(db, body.email.strip().lower(), body.password)
         valid = passwords.verify(body.password, user.password_hash if user else dummy_hash)
         if not user or not valid:
             raise HTTPException(401, "INVALID_CREDENTIALS")
@@ -223,6 +229,18 @@ def create_app(database_url=None, provider=None):
     def create_assistant(body: NewAssistant, scope=Depends(project_scope), db=Depends(database)):
         if scope[1].role not in WRITERS:
             raise HTTPException(403, "ROLE_FORBIDDEN")
+        if db.get(PublicWorkspace, scope[0].organization_id, with_for_update=True):
+            from sqlalchemy import func
+
+            if (
+                db.scalar(
+                    select(func.count())
+                    .select_from(Assistant)
+                    .where(Assistant.project_id == scope[0].id)
+                )
+                >= 10
+            ):
+                raise HTTPException(409, "ASSISTANT_LIMIT_REACHED")
         assistant = Assistant(project_id=scope[0].id, **body.model_dump())
         db.add(assistant)
         db.commit()
@@ -236,6 +254,9 @@ def create_app(database_url=None, provider=None):
     async def inference_check(body: Prompt, scope=Depends(project_scope)):
         if scope[1].role not in WRITERS:
             raise HTTPException(403, "ROLE_FORBIDDEN")
+        with sessions() as policy_db:
+            if policy_db.get(PublicWorkspace, scope[0].organization_id):
+                raise HTTPException(403, "OWN_AI_KEY_REQUIRED")
         try:
             answer = await app.state.provider.complete(body.text)
             return {"text": answer, "mode": "ungrounded-model-diagnostic"}
@@ -256,6 +277,9 @@ def create_app(database_url=None, provider=None):
     app.include_router(registry_router)
     app.include_router(calendar_router)
     app.include_router(team_router)
+    from .registration import router as registration_router
+
+    app.include_router(registration_router)
     from .integrations import router as integration_router
     from .providers import router as provider_router
     from .webhooks import router as webhook_router

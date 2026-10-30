@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .cloud import PRESETS, CloudProvider, endpoint
 from .context import assistant_scope, database, identity
-from .database import AssistantProvider
+from .database import Assistant, AssistantProvider, Project, PublicWorkspace
 from .inference import OllamaProvider, ProviderUnavailable
 
 router = APIRouter(prefix="/v1")
@@ -47,7 +47,7 @@ def unseal(row):
 def resolve_provider(request, db, assistant_id):
     row = db.get(AssistantProvider, assistant_id)
     if not row:
-        return request.app.state.provider
+        return default_provider(request, db, assistant_id)
     if row.provider == "ollama":
         provider = OllamaProvider(os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"), row.model)
         provider._gate = request.app.state.inference_gate
@@ -66,8 +66,21 @@ def resolve_provider(request, db, assistant_id):
         raise ProviderUnavailable(code="PROVIDER_ENDPOINT_UNAVAILABLE") from None
 
 
-def metadata(request, row):
-    default = request.app.state.provider
+def requires_own_key(db, assistant_id):
+    assistant = db.get(Assistant, assistant_id)
+    project = db.get(Project, assistant.project_id) if assistant else None
+    return bool(project and db.get(PublicWorkspace, project.organization_id))
+
+
+def default_provider(request, db, assistant_id):
+    # Public tenants must never spend the operator's deployment key or local model.
+    return (
+        OllamaProvider("", "") if requires_own_key(db, assistant_id) else request.app.state.provider
+    )
+
+
+def metadata(request, row, db, assistant_id):
+    default = default_provider(request, db, assistant_id)
     return {
         "provider": row.provider if row else getattr(default, "name", "ollama"),
         "model": row.model if row else getattr(default, "model", ""),
@@ -79,6 +92,7 @@ def metadata(request, row):
         "has_key": bool(row.encrypted_key) if row else bool(getattr(default, "api_key", "")),
         "revision": row.revision if row else 0,
         "inherited": row is None,
+        "requires_own_key": requires_own_key(db, assistant_id),
     }
 
 
@@ -118,7 +132,7 @@ def catalog(session=Depends(identity)):
 @router.get("/assistants/{assistant_id}/provider")
 def configuration(request: Request, scope=Depends(assistant_scope), db=Depends(database)):
     return {
-        **metadata(request, db.get(AssistantProvider, scope[0].id)),
+        **metadata(request, db.get(AssistantProvider, scope[0].id), db, scope[0].id),
         "can_manage": scope[1].role in {"owner", "administrator"},
     }
 
@@ -137,6 +151,8 @@ def save(
 ):
     manager(scope)
     assistant_id = scope[0].id
+    if requires_own_key(db, assistant_id) and body.provider == "ollama":
+        raise HTTPException(403, "OWN_AI_KEY_REQUIRED")
     row = db.get(AssistantProvider, assistant_id)
     if body.revision != (row.revision if row else 0):
         raise HTTPException(409, "PROVIDER_REVISION_CHANGED")
@@ -200,7 +216,7 @@ def save(
         db.rollback()
         raise HTTPException(409, "PROVIDER_REVISION_CHANGED") from None
     db.expire_all()
-    return metadata(request, db.get(AssistantProvider, assistant_id))
+    return metadata(request, db.get(AssistantProvider, assistant_id), db, assistant_id)
 
 
 @router.delete("/assistants/{assistant_id}/provider", status_code=204)

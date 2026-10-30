@@ -395,5 +395,5 @@ def test_revision_eight_migrates_optional_features_disabled(tmp_path):
             text("SELECT enabled, support_enabled, bookings_enabled FROM assistant_integrations")
         ).one()
         assert row[0] and not row[1] and not row[2]
-        assert db.execute(text("SELECT MAX(version) FROM schema_version")).scalar() == 9
+        assert db.execute(text("SELECT MAX(version) FROM schema_version")).scalar() == 10
     engine.dispose()
